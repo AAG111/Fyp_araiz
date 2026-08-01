@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+python = "3.10"
+
+[deploy]
+startCommand = "pip install -r requirements.txt && gunicorn --bind 0.0.0.0:5000 server:app"
