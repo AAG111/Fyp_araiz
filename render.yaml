@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: formcheck-backend
-    env: python
-    pythonVersion: 3.10
-    plan: free
-    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r backend_requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:10000 server:app
-    maxInstanceCount: 1
