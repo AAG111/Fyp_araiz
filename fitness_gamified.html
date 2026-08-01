@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FormCheck — Gamified Fitness & Wellness</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET & ROOT ── */
+:root{
+  --bg:#0b0c0f;--surface:#13151a;--card:#1a1d24;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f5;--muted:rgba(240,240,245,0.38);--dim:rgba(240,240,245,0.14);
+  --green:#00ff87;--yellow:#ffcc00;--red:#ff3d5a;
+  --blue:#4488ff;--purple:#b066ff;--teal:#00ddb0;--orange:#ff8c42;
+  --topbar:52px;--sidebar:300px;--legend:38px;
+  --fh:'Syne',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--fm);}
+
+/* Theme transition animation */
+html.theme-transitioning {
+  animation: themeSwitch 0.6s ease-in-out;
+}
+
+@keyframes themeSwitch {
+  0% { opacity: 1; }
+  50% { opacity: 0.85; filter: brightness(0.98) blur(2px); }
+  100% { opacity: 1; }
+}
+
+/* Background overlay for smooth transitions */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  pointer-events: none;
+  z-index: 999;
+  animation: bgFlash 0.6s ease-in-out;
+}
+
+@keyframes bgFlash {
+  0% { background: rgba(255, 255, 255, 0); }
+  50% { background: rgba(255, 255, 255, 0.05); }
+  100% { background: rgba(255, 255, 255, 0); }
+}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .5s;backdrop-filter:blur(0px);}
+#splash.gone{opacity:0;pointer-events:none;}
+.sp-title{font-family:var(--fh);font-size:42px;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:14px;}
+.sp-dot{width:12px;height:12px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite;}
+.sp-bar{width:240px;height:2px;background:var(--border2);border-radius:1px;overflow:hidden;}
+.sp-fill{height:100%;background:var(--green);width:0%;transition:width .3s;}
+.sp-msg{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+
+/* ── SHELL — fills viewport exactly ── */
+.shell{
+  position:fixed;inset:0;
+  display:grid;
+  grid-template-columns:1fr var(--sidebar);
+  grid-template-rows:var(--topbar) 1fr var(--legend);
+  transition: background-color 0.6s ease-in-out;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  grid-column:1/-1;grid-row:1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 16px;border-bottom:1px solid var(--border);
+  background:rgba(11,12,15,.95);z-index:20;transition:background-color 0.6s ease-in-out;
+}
+.logo{font-family:var(--fh);font-size:15px;font-weight:700;letter-spacing:.04em;}
+.logo span{color:var(--green);}
+.pill{display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;letter-spacing:.1em;background:rgba(255,255,255,.04);border:1px solid var(--border2);color:var(--muted);transition:all .3s;}
+.pill.on{background:rgba(0,255,135,.08);border-color:rgba(0,255,135,.25);color:var(--green);}
+.pill .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.pill.on .dot{animation:blink 1.5s infinite;}
+.tbr{display:flex;gap:6px;}
+.btn{font-family:var(--fm);font-size:10px;letter-spacing:.06em;padding:5px 11px;border-radius:4px;cursor:pointer;background:transparent;border:1px solid var(--border2);color:var(--muted);transition:all .15s;text-transform:uppercase;white-space:nowrap;}
+.btn:hover{border-color:rgba(255,255,255,.25);color:var(--text);}
+.btn.on{border-color:rgba(0,255,135,.35);color:var(--green);background:rgba(0,255,135,.07);}
+.btn.cam-on{border-color:rgba(255,61,90,.4);color:var(--red);background:rgba(255,61,90,.07);}
+.btn.dash{border-color:rgba(176,102,255,.4);color:var(--purple);background:rgba(176,102,255,.07);}
+.btn.shop-btn{border-color:rgba(255,204,0,.4);color:var(--yellow);background:rgba(255,204,0,.07);}
+
+/* ── VIDEO AREA ── */
+.cam-area{
+  grid-column:1;grid-row:2;
+  position:relative;overflow:hidden;background:#000;
+}
+#webcam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);}
+.idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.idle-icon{font-size:44px;opacity:.07;}
+.idle p{font-size:11px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;text-align:center;line-height:2;}
+/* corners */
+.c{position:absolute;width:18px;height:18px;opacity:.4;}
+.c.tl{top:12px;left:12px;border-top:1.5px solid var(--green);border-left:1.5px solid var(--green);}
+.c.tr{top:12px;right:12px;border-top:1.5px solid var(--green);border-right:1.5px solid var(--green);}
+.c.bl{bottom:12px;left:12px;border-bottom:1.5px solid var(--green);border-left:1.5px solid var(--green);}
+.c.br{bottom:12px;right:12px;border-bottom:1.5px solid var(--green);border-right:1.5px solid var(--green);}
+/* HUD */
+.hud-live{position:absolute;top:12px;left:46px;font-size:10px;color:rgba(0,255,135,.6);letter-spacing:.12em;}
+.hud-fps{position:absolute;top:12px;right:46px;font-size:10px;color:rgba(255,255,255,.2);letter-spacing:.06em;}
+.hud-ex{position:absolute;bottom:14px;left:14px;font-family:var(--fh);font-size:13px;font-weight:600;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);padding:4px 12px;border-radius:4px;border-left:2px solid var(--green);display:none;letter-spacing:.04em;}
+/* rep HUD */
+.rep-hud{position:absolute;top:12px;right:12px;display:none;flex-direction:column;align-items:center;gap:3px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);border:1px solid rgba(0,255,135,.2);border-radius:10px;padding:10px 14px;min-width:72px;}
+.rep-num{font-family:var(--fh);font-size:34px;font-weight:800;color:var(--green);line-height:1;transition:transform .1s,color .1s;}
+.rep-num.flash{color:#fff;transform:scale(1.25);}
+.rep-lbl{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.rep-set{font-size:11px;color:var(--yellow);}
+
+/* ── LEGEND ── */
+.legend{
+  grid-column:1;grid-row:3;
+  display:flex;gap:18px;align-items:center;padding:0 14px;
+  border-top:1px solid var(--border);background:var(--surface);overflow:hidden;
+  transition:background-color 0.6s ease-in-out;
+}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;}
+.ld{width:7px;height:7px;border-radius:50%;}
+.ldash{width:20px;border-top:2px dashed var(--blue);}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  grid-column:2;grid-row:2/4;
+  background:var(--surface);border-left:1px solid var(--border);
+  overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;
+  transition:background-color 0.6s ease-in-out;
+}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.sp{border-bottom:1px solid var(--border);padding:13px 14px;flex-shrink:0;}
+.sl{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.exh{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px;}
+
+/* rings */
+.rings{display:flex;gap:10px;margin-bottom:10px;}
+.ri{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.ri span{font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;}
+
+/* rep target */
+.rt-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.rt-val{font-family:var(--fh);font-size:20px;font-weight:700;color:var(--yellow);}
+.rt-sub{font-size:10px;color:var(--dim);}
+.rpbar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden;margin-bottom:10px;}
+.rpbar-fill{height:100%;border-radius:2px;background:var(--green);transition:width .3s;}
+
+/* alert */
+.alert{padding:8px 10px;border-radius:4px;font-size:11px;line-height:1.55;transition:all .3s;border-left:2px solid transparent;}
+.alert.good{background:rgba(0,255,135,.06);border-color:var(--green);color:rgba(0,255,135,.85);}
+.alert.warn{background:rgba(255,204,0,.06);border-color:var(--yellow);color:rgba(255,204,0,.9);}
+.alert.idle{background:rgba(255,255,255,.03);border-color:var(--border2);color:var(--dim);}
+
+/* set tracker */
+.set-row{display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);margin-bottom:6px;transition:all .2s;}
+.set-row:hover{background:rgba(255,255,255,.07);border-color:var(--border2);}
+.set-row.active-set{background:rgba(0,255,135,.12);border-color:rgba(0,255,135,.3);}
+.set-row.completed-set{background:rgba(0,255,135,.08);border-color:rgba(0,255,135,.4);}
+.set-n{font-size:10px;color:var(--dim);width:32px;font-weight:600;}
+.set-r{font-family:var(--fh);font-size:13px;font-weight:700;color:var(--green);}
+.set-rl{font-size:10px;color:var(--muted);}
+.set-s{margin-left:auto;font-size:9px;padding:3px 8px;border-radius:20px;font-weight:600;cursor:pointer;transition:all .2s;}
+.set-s.done{background:rgba(0,255,135,.25);color:var(--green);}
+.set-s.active{background:rgba(255,204,0,.2);color:var(--yellow);animation:pulse 1s infinite;}
+.set-s.todo{background:rgba(255,255,255,.08);color:var(--dim);}
+.set-s:hover{opacity:0.8;}
+
+@keyframes pulse{
+  0%, 100%{opacity:1;}
+  50%{opacity:0.7;}
+}
+
+.nxt-btn{font-family:var(--fm);font-size:11px;padding:7px 12px;border-radius:5px;border:1px solid rgba(0,255,135,.3);background:rgba(0,255,135,.07);color:var(--green);cursor:pointer;width:100%;text-align:center;letter-spacing:.06em;text-transform:uppercase;transition:all .15s;margin-top:4px;}
+.nxt-btn:hover{background:rgba(0,255,135,.14);}
+
+/* Exercise selector dropdown */
+.ex-dropdown{
+  font-family:var(--fm);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+  padding:8px 12px;border-radius:6px;cursor:pointer;border:1.5px solid var(--border2);
+  background:var(--card);color:var(--text);transition:all .2s;
+  width:100%;margin-bottom:12px;
+}
+.ex-dropdown:hover{
+  border-color:rgba(0,255,135,.4);background:rgba(0,255,135,.05);
+}
+.ex-dropdown:focus{
+  outline:none;border-color:var(--green);background:rgba(0,255,135,.08);
+  box-shadow:0 0 12px rgba(0,255,135,.2);
+}
+.ex-dropdown option{
+  background:var(--surface);color:var(--text);
+}
+
+/* joints */
+.jl{display:flex;flex-direction:column;gap:2px;}
+.jr{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--border);}
+.jdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.jname{font-size:10px;color:var(--muted);flex:1;text-transform:capitalize;letter-spacing:.03em;}
+.jv{font-size:10px;font-weight:500;width:30px;text-align:right;}
+.jarr{font-size:9px;color:var(--dim);}
+.jidl{font-size:10px;color:var(--dim);width:30px;}
+.jbar{flex:1;height:2px;background:var(--border2);border-radius:1px;overflow:hidden;max-width:44px;}
+.jbf{height:100%;border-radius:1px;transition:width .5s;}
+
+/* wellness */
+.mood-r{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.mglow{width:9px;height:9px;border-radius:50%;transition:all .5s;flex-shrink:0;}
+.mname{font-family:var(--fh);font-size:17px;font-weight:700;letter-spacing:-.02em;}
+.mconf{font-size:10px;color:var(--dim);margin-left:auto;}
+.ml{display:flex;flex-direction:column;gap:9px;}
+.mr{display:flex;flex-direction:column;gap:4px;}
+.mhdr{display:flex;justify-content:space-between;}
+.mlbl{font-size:10px;color:var(--muted);letter-spacing:.05em;}
+.mval{font-size:10px;font-weight:500;}
+.mtrack{height:3px;background:var(--border2);border-radius:2px;overflow:hidden;}
+.mfill{height:100%;border-radius:2px;transition:width .6s;}
+.dfbadge{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:3px 8px;border-radius:20px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--border2);color:var(--dim);background:rgba(255,255,255,.03);transition:all .4s;}
+.dfbadge.on{border-color:rgba(0,255,135,.3);color:var(--green);background:rgba(0,255,135,.06);}
+.dfbadge .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.dfbadge.on .dot{animation:blink 2s infinite;}
+.snote{font-size:10px;color:var(--dim);line-height:1.65;margin-top:8px;}
+
+/* sparklines */
+.swrap{margin-bottom:8px;}
+.slbl{font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.05em;}
+.ssvg{width:100%;overflow:visible;}
+
+/* ── DASHBOARD OVERLAY ── */
+#dash{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(7,7,12,.94);backdrop-filter:blur(18px);
+  display:none;flex-direction:column;overflow:hidden;
+  animation: dashOpen 0.4s ease-out;
+}
+#dash.open{display:flex;}
+
+@keyframes dashOpen {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(18px);
+  }
+}
+
+.dh{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0;
+  background:rgba(7,7,12,.96);
+}
+.dtitle{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:-.02em;}
+.dclose{font-size:20px;cursor:pointer;color:var(--muted);background:none;border:none;padding:4px 8px;line-height:1;}
+.dclose:hover{color:var(--text);}
+.dbody{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:14px;}
+.dbody::-webkit-scrollbar{width:3px;}
+.dbody::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* stat strip */
+.dstats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.dsc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:background-color 0.6s ease-in-out;}
+.dsc-l{font-size:9px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:4px;}
+.dsc-v{font-family:var(--fh);font-size:24px;font-weight:800;line-height:1.1;}
+.dsc-s{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* 2-col grid */
+.d2{display:grid;grid-template-columns:1fr 320px;gap:14px;}
+.dcol{display:flex;flex-direction:column;gap:10px;}
+
+/* challenge cards */
+.ccard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;transition:border-color .15s;}
+.ccard.done{opacity:.55;border-color:rgba(0,255,135,.15);}
+.ccard.act{border-color:rgba(0,255,135,.3);}
+.cicon{font-size:20px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:7px;flex-shrink:0;}
+.cicon.physical{background:rgba(68,136,255,.12);}
+.cicon.mental{background:rgba(176,102,255,.12);}
+.cicon.hybrid{background:rgba(0,221,176,.12);}
+.cbody{flex:1;min-width:0;}
+.cname{font-family:var(--fh);font-size:13px;font-weight:600;margin-bottom:2px;}
+.cdesc{font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:6px;}
+.cpbar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden;margin-bottom:5px;}
+.cpfill{height:100%;border-radius:2px;transition:width .6s;}
+.cftr{display:flex;align-items:center;gap:7px;}
+.ccred{font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(255,204,0,.1);color:var(--yellow);border:1px solid rgba(255,204,0,.2);}
+.ctype{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;}
+.cpct{font-size:10px;color:var(--muted);margin-left:auto;}
+.cchk{margin-left:auto;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.cchk.done{background:rgba(0,255,135,.2);color:var(--green);}
+.cchk.todo{border:1px solid var(--border2);color:var(--dim);}
+.cchk.act{border:1px solid rgba(0,255,135,.4);color:var(--green);}
+
+/* right col cards */
+.dcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;transition:background-color 0.6s ease-in-out;}
+.dcard-t{font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;}
+.vrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.vicon{font-size:13px;width:22px;text-align:center;}
+.vlbl{font-size:11px;color:var(--muted);flex:1;}
+.vval{font-family:var(--fh);font-size:13px;font-weight:700;}
+.ctot{font-family:var(--fh);font-size:32px;font-weight:800;color:var(--yellow);line-height:1.1;}
+.csub{font-size:11px;color:var(--muted);margin-bottom:12px;}
+.cbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px;}
+.cbr{height:5px;background:var(--border2);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.cbrf{height:100%;border-radius:3px;transition:width .8s;}
+.shop{margin-top:8px;padding:9px 11px;border-radius:7px;background:rgba(176,102,255,.06);border:1px solid rgba(176,102,255,.15);font-size:11px;color:var(--purple);line-height:1.5;cursor:pointer;transition:all .15s;}
+.shop:hover{background:rgba(176,102,255,.12);border-color:rgba(176,102,255,.3);}
+
+/* ── COMPANION ── */
+.companion{position:absolute;bottom:18px;right:18px;width:108px;height:108px;z-index:5;cursor:pointer;filter:drop-shadow(0 6px 14px rgba(0,0,0,.45));}
+.companion:hover{opacity:0.9;}
+.companion.poked{animation:companionPoke .5s ease;}
+.companion.celebrate{animation:companionCelebrate .6s ease;}
+@keyframes companionPoke{
+  0%{transform:scale(1) rotate(0deg);}
+  30%{transform:scale(0.85) rotate(-10deg);}
+  55%{transform:scale(1.12) rotate(8deg);}
+  75%{transform:scale(0.96) rotate(-4deg);}
+  100%{transform:scale(1) rotate(0deg);}
+}
+@keyframes companionCelebrate{
+  0%{transform:translateY(0) scale(1) rotate(0deg);}
+  20%{transform:translateY(-18px) scale(1.15) rotate(-8deg);}
+  40%{transform:translateY(-22px) scale(1.18) rotate(8deg);}
+  60%{transform:translateY(-10px) scale(1.1) rotate(-6deg);}
+  80%{transform:translateY(-4px) scale(1.04) rotate(3deg);}
+  100%{transform:translateY(0) scale(1) rotate(0deg);}
+}
+.companion svg{width:100%;height:100%;display:block;}
+.companion-bubble{position:absolute;bottom:118px;right:6px;background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:7px 11px;font-size:11px;font-family:var(--fh);white-space:nowrap;opacity:0;transform:translateY(6px) scale(.9);transition:all .25s cubic-bezier(.34,1.56,.64,1);pointer-events:none;max-width:200px;white-space:normal;}
+.companion-bubble.show{opacity:1;transform:translateY(0) scale(1);}
+.companion-bubble::after{content:'';position:absolute;bottom:-5px;right:30px;width:10px;height:10px;background:var(--card);border-right:1px solid var(--border2);border-bottom:1px solid var(--border2);transform:rotate(45deg);}
+
+/* ── SHOP MODAL ── */
+#shop{position:fixed;inset:0;z-index:350;background:rgba(7,7,12,.94);backdrop-filter:blur(18px);display:none;flex-direction:column;overflow:hidden;animation: shopOpen 0.4s ease-out;}
+#shop.open{display:flex;}
+
+@keyframes shopOpen {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(18px);
+  }
+}
+
+.shop-head{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(7,7,12,.96);}
+.shop-bal{display:flex;align-items:center;gap:14px;}
+.shop-bal-num{font-family:var(--fh);font-size:20px;font-weight:800;color:var(--yellow);}
+.shop-body{flex:1;overflow-y:auto;padding:18px 22px;}
+.shop-body::-webkit-scrollbar{width:3px;}
+.shop-body::-webkit-scrollbar-thumb{background:var(--border2);}
+.shop-tabs{display:flex;gap:6px;margin-bottom:16px;}
+.shop-tab{font-family:var(--fm);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);transition:all .15s;}
+.shop-tab.on{border-color:rgba(176,102,255,.4);color:var(--purple);background:rgba(176,102,255,.08);}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;}
+
+/* Theme item with animation */
+.shop-item{background:var(--card);border:2px solid var(--border);border-radius:12px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;transition:all .3s ease;position:relative;cursor:pointer;}
+.shop-item:hover {
+  transform: translateY(-3px);
+  border-color: var(--blue);
+  box-shadow: 0 8px 24px rgba(68, 136, 255, 0.15);
+}
+.shop-item.owned{border-color:rgba(0,255,135,.25);}
+.shop-item.equipped{border:2px solid var(--green);background:rgba(0,255,135,.08);box-shadow: 0 0 20px rgba(0, 255, 135, 0.2);}
+.shop-item-swatch{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;transition:transform 0.3s ease;}
+.shop-item:hover .shop-item-swatch{transform:scale(1.1);}
+.shop-item-name{font-family:var(--fh);font-size:12px;font-weight:600;}
+.shop-item-desc{font-size:9.5px;color:var(--muted);line-height:1.4;min-height:28px;}
+.shop-item-price{font-size:11px;color:var(--yellow);font-family:var(--fm);}
+.shop-item-btn{font-family:var(--fm);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;border-radius:5px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--muted);width:100%;transition:all .15s;}
+.shop-item-btn.buy{border-color:rgba(255,204,0,.4);color:var(--yellow);}
+.shop-item-btn.buy:hover{background:rgba(255,204,0,.1);}
+.shop-item-btn.equip{border-color:rgba(0,255,135,.4);color:var(--green);}
+.shop-item-btn.equip:hover{background:rgba(0,255,135,.1);}
+.shop-item-btn.equipped{border-color:rgba(0,255,135,.5);color:var(--green);background:rgba(0,255,135,.1);cursor:default;}
+.shop-item-btn.locked{cursor:not-allowed;opacity:.5;}
+.shop-item-badge{position:absolute;top:8px;right:8px;font-size:9px;padding:1px 6px;border-radius:10px;background:rgba(0,255,135,.15);color:var(--green);}
+.sgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.sday{aspect-ratio:1;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--dim);}
+.sday.done{background:rgba(0,255,135,.2);color:var(--green);}
+.sday.today{background:rgba(0,255,135,.35);color:#fff;font-weight:700;}
+.sday.miss{background:rgba(255,255,255,.04);}
+
+/* ── CODE MODAL ── */
+#codeModal, #creditModal {position:fixed;inset:0;z-index:400;background:rgba(7,7,12,.94);backdrop-filter:blur(18px);display:none;align-items:center;justify-content:center;animation:fadeIn .3s ease-out;}
+#codeModal.open, #creditModal.open {display:flex;}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.code-modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;width:90%;max-width:400px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.code-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);background:rgba(7,7,12,.96);}
+.code-modal-title{font-family:var(--fh);font-size:18px;font-weight:700;letter-spacing:-.02em;}
+.code-modal-close{font-size:18px;cursor:pointer;color:var(--muted);background:none;border:none;padding:0;line-height:1;}
+.code-modal-close:hover{color:var(--text);}
+.code-modal-body{padding:22px;}
+.code-input{font-family:var(--fm);font-size:14px;padding:11px 14px;border-radius:6px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text);width:100%;margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em;transition:all .2s;}
+.code-input:focus{outline:none;border-color:var(--green);background:rgba(0,255,135,.05);box-shadow:0 0 12px rgba(0,255,135,.15);}
+.code-submit-btn{font-family:var(--fm);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:10px 18px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,255,135,.4);background:rgba(0,255,135,.1);color:var(--green);width:100%;transition:all .2s;font-weight:600;}
+.code-submit-btn:hover{background:rgba(0,255,135,.2);border-color:var(--green);}
+.code-message{font-size:12px;margin-top:12px;padding:10px;border-radius:6px;text-align:center;min-height:20px;}
+.code-message.success{background:rgba(0,255,135,.1);color:var(--green);border:1px solid rgba(0,255,135,.3);}
+.code-message.error{background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.3);}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--card);border:1px solid var(--border2);border-radius:9px;padding:10px 18px;font-size:13px;font-family:var(--fh);z-index:400;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;pointer-events:none;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-title"><div class="sp-dot"></div>FORM<span style="color:var(--green)">CHECK</span></div>
+  <div class="sp-bar"><div class="sp-fill" id="sfill"></div></div>
+  <div class="sp-msg" id="smsg">Loading pose model…</div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="logo">FORM<span>CHECK</span></div>
+      <div class="pill" id="livepill"><span class="dot"></span><span id="livetxt">OFFLINE</span></div>
+    </div>
+    <div class="tbr">
+      <button class="btn on"   id="btn-ideal"    onclick="toggleIdeal()">IDEAL ON</button>
+      <button class="btn on"   id="btn-skel"     onclick="toggleSkel()">SKELETON ON</button>
+      <button class="btn dash"                   onclick="openDash()">⊞ DASHBOARD</button>
+      <button class="btn shop-btn"                onclick="openShop()">🛍 SHOP</button>
+      <button class="btn"      id="btn-cam"      onclick="toggleCam()">START CAM</button>
+    </div>
+  </header>
+
+  <!-- VIDEO -->
+  <div class="cam-area">
+    <div class="idle" id="idle">
+      <div class="idle-icon">◉</div>
+      <p>Click START CAM to begin<br/>body + wellness analysis</p>
+    </div>
+    <video id="webcam" autoplay muted playsinline></video>
+    <img id="esp32cam" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" crossorigin="anonymous"/>
+    <canvas id="overlay"></canvas>
+    <div class="c tl"></div><div class="c tr"></div>
+    <div class="c bl"></div><div class="c br"></div>
+    <div class="hud-live" id="hudlive"></div>
+    <div class="hud-fps"  id="hudfps"></div>
+    <div class="hud-ex"   id="hudex"></div>
+    <div class="rep-hud"  id="rephud">
+      <div class="rep-num" id="repnum">0</div>
+      <div class="rep-lbl">REPS</div>
+      <div class="rep-set" id="repset">SET 1</div>
+    </div>
+    <!-- COMPANION -->
+    <div class="companion" id="companion" onclick="companionPoke()">
+      <div class="companion-bubble" id="companionBubble"></div>
+      <svg id="companionSvg" viewBox="0 0 64 64"></svg>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:var(--green)"></div>good form</div>
+    <div class="li"><div class="ld" style="background:var(--yellow)"></div>needs work</div>
+    <div class="li"><div class="ld" style="background:var(--red)"></div>poor form</div>
+    <div class="li"><div class="ldash"></div>ideal position</div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <!-- exercise -->
+    <div class="sp">
+      <div class="sl">Select Exercise</div>
+      <select id="exerciseDropdown" class="ex-dropdown" onchange="selectExercise(this.value)">
+        <option value="">🔄 Auto-detect</option>
+        <option value="Squat">🦵 Squat</option>
+        <option value="Deadlift">🏋 Deadlift</option>
+        <option value="Push-up">💪 Push-up</option>
+        <option value="Overhead Press">🙌 Overhead Press</option>
+      </select>
+      <div class="sl" style="margin-top:12px;">Current Exercise</div>
+      <div class="exh" id="exname">—</div>
+      <div class="rt-row">
+        <div><div class="rt-val" id="rttarget">—</div><div class="rt-sub">reps target</div></div>
+        <div style="flex:1;margin-left:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px;">
+            <span>Progress</span><span id="rppct">—</span>
+          </div>
+          <div class="rpbar"><div class="rpbar-fill" id="rpbar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="rings">
+        <div class="ri">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="29" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+            <circle id="rform" cx="36" cy="36" r="29" fill="none" stroke="#00ff87" stroke-width="5" stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2" transform="rotate(-90 36 36)" style="transition:stroke-dashoffset .5s,stroke .3s"/>
+            <text id="rformv" x="36" y="36" text-anchor="middle" dominant-baseline="central" fill="white" font-size="15" font-weight="600" font-family="'JetBrains Mono'">0</text>
+          </svg>
+          <span>form %</span>
+        </div>
+        <div class="ri">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="29" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+            <circle id="rreps" cx="36" cy="36" r="29" fill="none" stroke="#4488ff" stroke-width="5" stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2" transform="rotate(-90 36 36)" style="transition:stroke-dashoffset .5s"/>
+            <text id="rrepsv" x="36" y="36" text-anchor="middle" dominant-baseline="central" fill="white" font-size="15" font-weight="600" font-family="'JetBrains Mono'">0</text>
+          </svg>
+          <span>reps</span>
+        </div>
+        <div class="ri">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="29" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+            <circle id="rsets" cx="36" cy="36" r="29" fill="none" stroke="#ffcc00" stroke-width="5" stroke-linecap="round" stroke-dasharray="182.2" stroke-dashoffset="182.2" transform="rotate(-90 36 36)" style="transition:stroke-dashoffset .5s"/>
+            <text id="rsetsv" x="36" y="36" text-anchor="middle" dominant-baseline="central" fill="white" font-size="15" font-weight="600" font-family="'JetBrains Mono'">0</text>
+          </svg>
+          <span>sets</span>
+        </div>
+      </div>
+      <div class="alert idle" id="alertbox">Step into frame to begin</div>
+    </div>
+
+    <!-- set tracker -->
+    <div class="sp">
+      <div class="sl">Set Tracker</div>
+      <div id="settracker"></div>
+      <button class="nxt-btn" id="completeBtn" onclick="nextSet()" style="padding:12px;font-size:12px;margin-top:10px;background:rgba(0,255,135,.12);border-color:var(--green);">✓ Complete Set (Space)</button>
+      <div style="font-size:9px;color:var(--muted);margin-top:8px;text-align:center;">💡 Tip: Press spacebar to complete set, or click on set number</div>
+    </div>
+
+    <!-- joints -->
+    <div class="sp">
+      <div class="sl">Joint angles — actual vs ideal</div>
+      <div class="jl" id="jointlist"><div style="font-size:10px;color:var(--dim)">No pose detected yet</div></div>
+    </div>
+
+    <!-- wellness -->
+    <div class="sp">
+      <div class="sl">Facial wellness</div>
+      <div class="mood-r">
+        <div class="mglow" id="moodglow" style="background:var(--dim)"></div>
+        <div class="mname" id="moodname" style="color:var(--muted)">—</div>
+        <div class="mconf" id="moodconf"></div>
+      </div>
+      <div class="ml">
+        <div class="mr">
+          <div class="mhdr"><span class="mlbl">Stress</span><span class="mval" id="stressv" style="color:var(--muted)">—</span></div>
+          <div class="mtrack"><div class="mfill" id="stressb" style="width:0%"></div></div>
+        </div>
+        <div class="mr">
+          <div class="mhdr"><span class="mlbl">Blinks / min</span><span class="mval" id="blinkv" style="color:var(--purple)">—</span></div>
+          <div class="mtrack"><div class="mfill" id="blinkb" style="width:0%;background:var(--purple)"></div></div>
+        </div>
+      </div>
+      <div class="dfbadge" id="dfbadge"><span class="dot"></span><span id="dflbl">geometric fallback</span></div>
+      <div class="dfbadge" id="watchbadge" style="margin-top:4px;"><span class="dot"></span><span id="watchlbl">no smartwatch</span></div>
+      <p class="snote">Wellness indicator only — not a clinical diagnostic.</p>
+    </div>
+
+    <!-- sparklines -->
+    <div class="sp">
+      <div class="sl">Session history</div>
+      <div class="swrap">
+        <div class="slbl">Form score</div>
+        <svg class="ssvg" height="36" viewBox="0 0 272 36" preserveAspectRatio="none">
+          <polyline id="spform" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="swrap">
+        <div class="slbl">Stress</div>
+        <svg class="ssvg" height="36" viewBox="0 0 272 36" preserveAspectRatio="none">
+          <polyline id="spstress" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+  </aside>
+</div><!-- /shell -->
+
+<!-- DASHBOARD OVERLAY -->
+<div id="dash">
+  <div class="dh">
+    <div>
+      <div class="dtitle">Today's Dashboard</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="dashdate"></div>
+    </div>
+    <button class="dclose" onclick="closeDash()">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="dstats">
+      <div class="dsc"><div class="dsc-l">🔥 Streak</div><div class="dsc-v" id="dstreak" style="color:var(--orange)">0</div><div class="dsc-s">days in a row</div></div>
+      <div class="dsc"><div class="dsc-l">⭐ Total Credits</div><div class="dsc-v" id="dcreds" style="color:var(--yellow)">0</div><div class="dsc-s">earned lifetime</div></div>
+      <div class="dsc"><div class="dsc-l">✓ Done Today</div><div class="dsc-v" id="ddone" style="color:var(--green)">0</div><div class="dsc-s" id="ddonesub">of 5 challenges</div></div>
+      <div class="dsc"><div class="dsc-l">🎯 Streak Bonus</div><div class="dsc-v" id="dbonus" style="color:var(--purple)">+0</div><div class="dsc-s">extra credits today</div></div>
+    </div>
+    <div class="d2">
+      <div class="dcol">
+        <div style="font-size:10px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;">Today's Challenges</div>
+        <div id="challist"></div>
+      </div>
+      <div class="dcol">
+        <!-- vitals -->
+        <div class="dcard">
+          <div class="dcard-t">📊 Vitals Summary</div>
+          <div class="vrow"><div class="vicon">💗</div><div class="vlbl">Avg Stress</div><div class="vval" id="vstress" style="color:var(--yellow)">—</div></div>
+          <div class="vrow"><div class="vicon">❤️</div><div class="vlbl">Heart Rate</div><div class="vval" id="vhr" style="color:var(--red)">—</div></div>
+          <div class="vrow"><div class="vicon">🫁</div><div class="vlbl">SpO2</div><div class="vval" id="vspo2" style="color:var(--blue)">—</div></div>
+          <div class="vrow"><div class="vicon">😊</div><div class="vlbl">Dominant Mood</div><div class="vval" id="vmood" style="color:var(--blue)">—</div></div>
+          <div class="vrow"><div class="vicon">💪</div><div class="vlbl">Best Form Score</div><div class="vval" id="vform" style="color:var(--green)">—</div></div>
+          <div class="vrow" style="border-bottom:none"><div class="vicon">🔁</div><div class="vlbl">Total Reps Today</div><div class="vval" id="vreps" style="color:var(--teal)">0</div></div>
+        </div>
+        <!-- credits -->
+        <div class="dcard">
+          <div class="dcard-t">⭐ Credits Breakdown</div>
+          <div class="ctot" id="ctot">0</div>
+          <div class="csub">earned today</div>
+          <div class="cbl"><span>Physical</span><span id="cphysv">0</span></div>
+          <div class="cbr"><div class="cbrf" id="cphys" style="width:0%;background:var(--blue)"></div></div>
+          <div class="cbl"><span>Mental</span><span id="cmentv">0</span></div>
+          <div class="cbr"><div class="cbrf" id="cment" style="width:0%;background:var(--purple)"></div></div>
+          <div class="cbl"><span>Streak bonus</span><span id="cstrv">0</span></div>
+          <div class="cbr"><div class="cbrf" id="cstr" style="width:0%;background:var(--orange)"></div></div>
+          <div class="shop" onclick="closeDash();openShop();">🛍 Cosmetic Shop — click to browse</div>
+          <div class="shop" style="background:rgba(68,136,255,.06);border-color:rgba(68,136,255,.15);color:var(--blue);" onclick="openCreditModal();">➕ Add Credits</div>
+        </div>
+        <!-- streak calendar -->
+        <div class="dcard">
+          <div class="dcard-t">📅 Last 14 Days</div>
+          <div class="sgrid" id="sgrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREDIT MENU MODAL -->
+<div id="creditModal">
+  <div class="code-modal-content">
+    <div class="code-modal-header">
+      <div class="code-modal-title">➕ Add Credits</div>
+      <button class="code-modal-close" onclick="closeCreditModal()">✕</button>
+    </div>
+    <div class="code-modal-body">
+      <input type="number" id="creditInput" class="code-input" placeholder="Enter amount..." min="1" max="999999"/>
+      <button class="code-submit-btn" onclick="addCredits()">Add Credits</button>
+      <div id="creditMessage" class="code-message"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE ENTRY MODAL -->
+<div id="codeModal">
+  <div class="code-modal-content">
+    <div class="code-modal-header">
+      <div class="code-modal-title">🎁 Enter Credit Code</div>
+      <button class="code-modal-close" onclick="closeCodeModal()">✕</button>
+    </div>
+    <div class="code-modal-body">
+      <input type="text" id="codeInput" class="code-input" placeholder="Enter code..." maxlength="20"/>
+      <button class="code-submit-btn" onclick="submitCode()">Redeem Code</button>
+      <div id="codeMessage" class="code-message"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHOP MODAL -->
+<div id="shop">
+  <div class="shop-head">
+    <div>
+      <div class="dtitle">🛍 Cosmetic Shop</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Spend credits on dashboard themes and companion skins</div>
+    </div>
+    <div class="shop-bal">
+      <div style="text-align:right;">
+        <div class="shop-bal-num" id="shopBalance">0</div>
+        <div style="font-size:9px;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;">your credits</div>
+      </div>
+      <button class="dclose" onclick="closeShop()">✕</button>
+    </div>
+  </div>
+  <div class="shop-body">
+    <div class="shop-tabs">
+      <button class="shop-tab on" id="tab-themes" onclick="switchShopTab('themes')">🎨 Dashboard Themes</button>
+      <button class="shop-tab"    id="tab-companions" onclick="switchShopTab('companions')">🐾 Companions</button>
+    </div>
+    <div class="shop-grid" id="shopGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MediaPipe — load only Pose (FaceMesh loaded lazily after a delay) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════
+// ADAPTIVE CHALLENGE SYSTEM — AI-powered challenge adaptation
+// ═══════════════════════════════════════════════════════════════
+class AdaptiveChallengeSystem {
+  constructor() {
+    this.currentDifficulty = 'medium';
+    this.dailyChallenges = [];
+    this.modelTrained = false;
+    this.serverUrl = window.FORMCHECK_API_URL || 'http://localhost:5000';  // injected by streamlit_app.py, falls back to localhost
+    this.authToken = window.FORMCHECK_TOKEN || null;
+  }
+
+  _headers(extra) {
+    const h = Object.assign({ 'Content-Type': 'application/json' }, extra || {});
+    if (this.authToken) h['Authorization'] = 'Bearer ' + this.authToken;
+    return h;
+  }
+
+  // Fetch adaptive daily challenges from server
+  async fetchAdaptiveChallenges(formScore = 80, heartRate = 70, spo2 = 95, stress = 50) {
+    try {
+      const params = new URLSearchParams({
+        form_score: formScore,
+        heart_rate: heartRate,
+        spo2: spo2,
+        stress: stress
+      });
+      
+      const response = await fetch(`${this.serverUrl}/api/challenges/daily?${params}`, {
+        method: 'GET',
+        headers: this._headers()
+      });
+      
+      if (!response.ok) {
+        console.warn('Challenge API unavailable, using static challenges');
+        return null;
+      }
+      
+      const data = await response.json();
+      this.currentDifficulty = data.difficulty || 'medium';
+      this.dailyChallenges = data.challenges || [];
+      
+      console.log(`✅ AI predicted difficulty: ${this.currentDifficulty}`);
+      showToast(`🤖 AI difficulty: ${this.currentDifficulty}`);
+      
+      return this.dailyChallenges;
+    } catch (error) {
+      console.warn('Error fetching adaptive challenges:', error);
+      return null;
+    }
+  }
+
+  // Log challenge completion for model retraining
+  async logChallengeCompletion(challengeId, completed, actualReps, formScore) {
+    try {
+      const response = await fetch(`${this.serverUrl}/api/challenges/log`, {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify({
+          challenge_id: challengeId,
+          completed: completed,
+          actual_reps: actualReps,
+          form_score: formScore
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Challenge logged:', result);
+        return result;
+      }
+    } catch (error) {
+      console.warn('Error logging challenge:', error);
+    }
+  }
+
+  // Retrain model when enough data collected
+  async retrainModel() {
+    try {
+      const response = await fetch(`${this.serverUrl}/api/challenges/retrain`, {
+        method: 'POST',
+        headers: this._headers()
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          this.modelTrained = true;
+          console.log('✅ Model retrained successfully');
+          showToast('🤖 AI model updated with your data');
+        }
+        return result;
+      }
+    } catch (error) {
+      console.warn('Error retraining model:', error);
+    }
+  }
+
+  // Get analytics for dashboard
+  async getAnalytics() {
+    try {
+      const response = await fetch(`${this.serverUrl}/api/analytics`, { headers: this._headers() });
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.warn('Error fetching analytics:', error);
+    }
+    return {};
+  }
+}
+
+// Initialize adaptive system
+const adaptiveSystem = new AdaptiveChallengeSystem();
+
+// ═══════════════════════════════════════════════════════════════
+// PERFORMANCE CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const POSE_SKIP       = 3;
+const FACE_INTERVAL   = 1200;
+const SPARKLINE_EVERY = 30;
+const DF_POLL         = 6000;
+
+// ═══════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════
+const Store = (() => {
+  const m = {};
+  try { Object.assign(m, JSON.parse(localStorage.getItem('fc1')||'{}')); } catch(_){}
+  const save = () => { try { localStorage.setItem('fc1', JSON.stringify(m)); } catch(_){} };
+  return { get:(k,d)=> k in m ? m[k] : d, set:(k,v)=>{ m[k]=v; save(); } };
+})();
+
+const today = new Date().toISOString().slice(0,10);
+
+// ═══════════════════════════════════════════════════════════════
+// GAMIFICATION
+// ═══════════════════════════════════════════════════════════════
+const G = {
+  streak:         Store.get('streak', 0),
+  lastActive:     Store.get('lastActive', ''),
+  totalCredits:   Store.get('totalCredits', 0),
+  credPhys:       Store.get('cp_'+today, 0),
+  credMent:       Store.get('cm_'+today, 0),
+  credStr:        Store.get('cs_'+today, 0),
+  actLog:         Store.get('actlog', []),
+};
+G.credToday = G.credPhys + G.credMent + G.credStr;
+
+(()=>{
+  const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  if (G.lastActive !== today && G.lastActive !== yest) { G.streak=0; Store.set('streak',0); }
+})();
+
+function awardCredits(amt, type) {
+  if (type==='p') { G.credPhys+=amt; Store.set('cp_'+today, G.credPhys); }
+  else if (type==='m') { G.credMent+=amt; Store.set('cm_'+today, G.credMent); }
+  else { G.credStr+=amt; Store.set('cs_'+today, G.credStr); }
+  G.credToday = G.credPhys + G.credMent + G.credStr;
+  G.totalCredits = Store.get('totalCredits',0) + amt;
+  Store.set('totalCredits', G.totalCredits);
+}
+
+// challenges
+const CHALS = [
+  {id:'sq30',  t:'physical',icon:'🦵',name:'Squat Warrior',   desc:'3 sets of 10 squats — form ≥70%.',          tgt:{sets:3,reps:10,form:70,ex:'Squat'},        cr:120},
+  {id:'pu20',  t:'physical',icon:'💪',name:'Push-up Power',   desc:'2 sets of 10 push-ups.',                    tgt:{sets:2,reps:10,form:60,ex:'Push-up'},       cr:100},
+  {id:'dl15',  t:'physical',icon:'🏋',name:'Deadlift Focus',  desc:'2 sets of 8 deadlifts — form ≥75%.',        tgt:{sets:2,reps:8, form:75,ex:'Deadlift'},     cr:130},
+  {id:'ohp',   t:'physical',icon:'🙌',name:'Overhead Press',  desc:'2 sets of 6 OHP reps.',                     tgt:{sets:2,reps:6, form:65,ex:'Overhead Press'},cr:110},
+  {id:'calm',  t:'mental',  icon:'🧘',name:'Breathe & Reset', desc:'Reduce stress below 30% for 60s.',          tgt:{stressMax:30,dur:60},                       cr:80},
+  {id:'smile', t:'mental',  icon:'😊',name:'Positivity Check',desc:'Stay Happy or Focused for 30s.',            tgt:{moods:['Happy','Focused'],dur:30},          cr:70},
+  {id:'blink', t:'mental',  icon:'👁',name:'Eye Rest',        desc:'Blink rate ≥15/min for 30s.',               tgt:{blinkMin:15,dur:30},                        cr:60},
+  {id:'act10', t:'hybrid',  icon:'⚡',name:'Active Streak',   desc:'Any exercise — form ≥80%, 10 reps.',        tgt:{reps:10,form:80},                           cr:150},
+  {id:'mb',    t:'hybrid',  icon:'🌟',name:'Mind & Body',     desc:'5 reps good form while stress <50%.',       tgt:{reps:5,form:70,stressMax:50},              cr:200},
+];
+
+function todayChals() {
+  const seed = parseInt(today.replace(/-/g,'')) % 997;
+  let s = seed;
+  const sh = a => { const b=[...a]; for(let i=b.length-1;i>0;i--){s=(s*1664525+1013904223)&0xffffffff;const j=Math.abs(s)%(i+1);[b[i],b[j]]=[b[j],b[i]];} return b; };
+  return sh(CHALS).slice(0,5);
+}
+const TC = todayChals();
+let CP = Store.get('cp_chal_'+today, null)
+  || Object.fromEntries(TC.map(c=>[c.id,{p:0,done:false}]));
+Store.set('cp_chal_'+today, CP);
+
+function completeChallenge(c) {
+  CP[c.id].done = true;
+  Store.set('cp_chal_'+today, CP);
+  awardCredits(c.cr, c.t==='mental'?'m':'p');
+  
+  if (G.lastActive !== today) {
+    G.streak++;
+    G.lastActive = today;
+    Store.set('streak', G.streak);
+    Store.set('lastActive', today);
+    const bonus = G.streak * 10;
+    awardCredits(bonus,'s');
+  }
+  
+  if (!G.actLog.includes(today)) {
+    G.actLog.push(today);
+    Store.set('actlog', G.actLog.slice(-30));
+  }
+  
+  // Log to adaptive system
+  adaptiveSystem.logChallengeCompletion(
+    c.id,
+    true,
+    RS.reps || 0,
+    SS.forms.length ? Math.max(...SS.forms) : 80
+  );
+  
+  // Retrain model every 20 completions
+  const totalDone = TC.filter(c => CP[c.id]?.done).length;
+  if (totalDone % 20 === 0) {
+    adaptiveSystem.retrainModel();
+  }
+  
+  showToast(`🎉 ${c.name} complete! +${c.cr}⭐`);
+  beep(660,180,.12);
+  setTimeout(()=>beep(880,180,.12),200);
+  companionReact('challenge');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COSMETIC SHOP
+// ═══════════════════════════════════════════════════════════════
+const THEMES = [
+  { id:'theme_default',  name:'FormCheck Classic', desc:'The original green & blue look',  price:0, swatch:'⬛', accent:'#00ff87', accent2:'#4488ff', bgMain:'#0b0c0f', bgSurface:'#13151a', bgCard:'#1a1d24' },
+  { id:'theme_sunset',   name:'Sunset Run',        desc:'Warm orange & coral accents',      price:300, swatch:'🟧', accent:'#ff8c42', accent2:'#ff3d5a', bgMain:'#1a0f0a', bgSurface:'#2a1810', bgCard:'#3a2520' },
+  { id:'theme_ocean',    name:'Ocean Calm',        desc:'Cool teal & deep blue palette',    price:300, swatch:'🟦', accent:'#00ddb0', accent2:'#4488ff', bgMain:'#0a1215', bgSurface:'#11191f', bgCard:'#182530' },
+  { id:'theme_violet',   name:'Violet Focus',      desc:'Purple & magenta energy',          price:450, swatch:'🟪', accent:'#b066ff', accent2:'#ff66c4', bgMain:'#140a1a', bgSurface:'#1f1429', bgCard:'#2a1f38' },
+  { id:'theme_gold',     name:'Champion Gold',     desc:'Premium gold & black finish',      price:800, swatch:'🟨', accent:'#ffcc00', accent2:'#ff8c42', bgMain:'#15120a', bgSurface:'#211a0f', bgCard:'#2d2515' },
+  { id:'theme_mono',     name:'Mono Stealth',      desc:'Minimal greyscale, low distraction',price:600, swatch:'⬜', accent:'#e8e8e8', accent2:'#888888', bgMain:'#1a1a1a', bgSurface:'#242424', bgCard:'#2f2f2f' },
+  { id:'theme_cyber',    name:'Cyber Neon',        desc:'Cyberpunk pink & cyan vibes',      price:500, swatch:'💜', accent:'#ff006e', accent2:'#00f5ff', bgMain:'#0d0221', bgSurface:'#1a0033', bgCard:'#240055' },
+  { id:'theme_forest',   name:'Forest Green',      desc:'Natural earth tones & moss',       price:350, swatch:'🟢', accent:'#2ecc71', accent2:'#27ae60', bgMain:'#0d2818', bgSurface:'#1a3a2a', bgCard:'#245030' },
+  { id:'theme_lava',     name:'Lava Flow',         desc:'Hot reds & deep purples',          price:400, swatch:'🔴', accent:'#ff4757', accent2:'#a4161a', bgMain:'#1a0505', bgSurface:'#2d0a0a', bgCard:'#3d1515' },
+  { id:'theme_arctic',   name:'Arctic Ice',        desc:'Cool blues with icy accents',      price:500, swatch:'❄️', accent:'#64e5ff', accent2:'#1e90ff', bgMain:'#0a1929', bgSurface:'#132f4c', bgCard:'#1b3a52' },
+  { id:'theme_midnight', name:'Midnight',          desc:'Deep dark with silver accents',    price:250, swatch:'🌙', accent:'#c0c0c0', accent2:'#696969', bgMain:'#0f0f1e', bgSurface:'#1a1a2e', bgCard:'#262641' },
+  { id:'theme_neon_pink',name:'Neon Pink',         desc:'Bright pink & electric lime',      price:550, swatch:'💗', accent:'#ff1493', accent2:'#00ff41', bgMain:'#1a0a15', bgSurface:'#2d1a28', bgCard:'#3a2235' },
+];
+
+const COMPANIONS = [
+  { id:'comp_blob',   name:'Blob',     desc:'Your default wobbly buddy',     price:0,    emoji:'🟢', color:'#00ff87' },
+  { id:'comp_blob_red', name:'Blob Red', desc:'Red jelly companion',           price:150,  emoji:'🔴', color:'#ff3d5a' },
+  { id:'comp_blob_blue', name:'Blob Blue', desc:'Cool blue buddy',             price:150,  emoji:'🔵', color:'#4488ff' },
+  { id:'comp_blob_purple', name:'Blob Purple', desc:'Purple mystical blob',    price:200,  emoji:'🟣', color:'#b066ff' },
+  { id:'comp_fox',    name:'Fox',      desc:'Quick and clever companion',    price:250,  emoji:'🦊', color:'#ff8c42' },
+  { id:'comp_fox_silver', name:'Silver Fox', desc:'Wise silver fox',         price:300,  emoji:'🦊', color:'#c0c0c0' },
+  { id:'comp_owl',    name:'Owl',      desc:'Wise night-time workout buddy', price:250,  emoji:'🦉', color:'#b066ff' },
+  { id:'comp_owl_brown', name:'Brown Owl', desc:'Forest brown owl',           price:300,  emoji:'🦉', color:'#8b6f47' },
+  { id:'comp_dragon', name:'Dragon',   desc:'Legendary — for true streaks',  price:1200, emoji:'🐉', color:'#ff3d5a' },
+  { id:'comp_dragon_gold', name:'Golden Dragon', desc:'Premium gold dragon',  price:1500, emoji:'🐉', color:'#ffcc00' },
+  { id:'comp_dragon_ice', name:'Ice Dragon', desc:'Frozen dragon companion',  price:1200, emoji:'🐉', color:'#64e5ff' },
+  { id:'comp_panda',  name:'Panda',    desc:'Calm, mindful presence',        price:500,  emoji:'🐼', color:'#fff' },
+  { id:'comp_panda_red', name:'Red Panda', desc:'Spicy red panda',          price:600,  emoji:'🐼', color:'#ff8c42' },
+  { id:'comp_robot',  name:'Robot',    desc:'Precision-tracking unit',       price:700,  emoji:'🤖', color:'#00ddb0' },
+  { id:'comp_robot_gold', name:'Gold Robot', desc:'Premium AI assistant',    price:900,  emoji:'🤖', color:'#ffcc00' },
+  { id:'comp_robot_red', name:'Red Robot', desc:'Warrior combat droid',      price:850,  emoji:'🤖', color:'#ff3d5a' },
+  { id:'comp_cat',    name:'Cat',      desc:'Independent feline friend',     price:400,  emoji:'🐱', color:'#ff8c42' },
+  { id:'comp_cat_white', name:'White Cat', desc:'Pure white kitty',          price:500,  emoji:'🐱', color:'#f0f0f0' },
+  { id:'comp_cat_black', name:'Black Cat', desc:'Spooky black cat',          price:500,  emoji:'🐱', color:'#2a2a2a' },
+  { id:'comp_bear',   name:'Bear',     desc:'Strong and powerful companion', price:800,  emoji:'🐻', color:'#8b6f47' },
+  { id:'comp_bear_polar', name:'Polar Bear', desc:'Arctic ice bear',         price:900,  emoji:'🐻', color:'#e8e8e8' },
+];
+
+const ownedThemes     = new Set(Store.get('ownedThemes',     ['theme_default']));
+const ownedCompanions = new Set(Store.get('ownedCompanions', ['comp_blob']));
+let activeTheme     = Store.get('activeTheme',     'theme_default');
+let activeCompanion = Store.get('activeCompanion', 'comp_blob');
+let shopTab = 'themes';
+
+function applyTheme(id) {
+  const t = THEMES.find(x=>x.id===id) || THEMES[0];
+  document.documentElement.classList.add('theme-transitioning');
+  document.documentElement.style.setProperty('--green', t.accent);
+  document.documentElement.style.setProperty('--blue',  t.accent2);
+  document.documentElement.style.setProperty('--bg', t.bgMain);
+  document.documentElement.style.setProperty('--surface', t.bgSurface);
+  document.documentElement.style.setProperty('--card', t.bgCard);
+  setTimeout(() => {
+    document.documentElement.classList.remove('theme-transitioning');
+  }, 600);
+  activeTheme = id;
+  Store.set('activeTheme', id);
+}
+
+applyTheme(activeTheme);
+
+function openShop(){
+  document.getElementById('shopBalance').textContent = G.totalCredits.toLocaleString();
+  renderShop();
+  document.getElementById('shop').classList.add('open');
+}
+function closeShop(){ document.getElementById('shop').classList.remove('open'); }
+function switchShopTab(tab){
+  shopTab = tab;
+  document.getElementById('tab-themes').classList.toggle('on', tab==='themes');
+  document.getElementById('tab-companions').classList.toggle('on', tab==='companions');
+  renderShop();
+}
+
+function renderShop(){
+  const grid = document.getElementById('shopGrid');
+  const items = shopTab === 'themes' ? THEMES : COMPANIONS;
+  const owned = shopTab === 'themes' ? ownedThemes : ownedCompanions;
+  const active = shopTab === 'themes' ? activeTheme : activeCompanion;
+
+  grid.innerHTML = items.map(it => {
+    const isOwned = owned.has(it.id);
+    const isActive = active === it.id;
+    const canAfford = G.totalCredits >= it.price;
+    const cls = isActive ? 'equipped' : isOwned ? 'owned' : '';
+    const swatch = shopTab === 'themes'
+      ? `<div class="shop-item-swatch" style="background:linear-gradient(135deg,${it.accent},${it.accent2});">${it.swatch}</div>`
+      : `<div class="shop-item-swatch" style="background:${it.color}22;border:2px solid ${it.color}55">${it.emoji}</div>`;
+
+    let btn;
+    if (isActive)       btn = `<button class="shop-item-btn equipped">✓ Equipped</button>`;
+    else if (isOwned)    btn = `<button class="shop-item-btn equip" onclick="equipItem('${shopTab}','${it.id}')">Equip</button>`;
+    else if (canAfford)  btn = `<button class="shop-item-btn buy" onclick="buyItem('${shopTab}','${it.id}',${it.price})">Buy — ${it.price}⭐</button>`;
+    else                 btn = `<button class="shop-item-btn locked" disabled>Need ${it.price}⭐</button>`;
+
+    return `<div class="shop-item ${cls}">
+      ${isOwned && !isActive ? '<div class="shop-item-badge">owned</div>' : ''}
+      ${swatch}
+      <div class="shop-item-name">${it.name}</div>
+      <div class="shop-item-desc">${it.desc}</div>
+      <div class="shop-item-price">${it.price === 0 ? 'free' : it.price + ' ⭐'}</div>
+      ${btn}
+    </div>`;
+  }).join('');
+}
+
+function buyItem(type, id, price){
+  if (G.totalCredits < price) return;
+  G.totalCredits -= price;
+  Store.set('totalCredits', G.totalCredits);
+  if (type==='themes') { ownedThemes.add(id); Store.set('ownedThemes',[...ownedThemes]); }
+  else { ownedCompanions.add(id); Store.set('ownedCompanions',[...ownedCompanions]); }
+  document.getElementById('shopBalance').textContent = G.totalCredits.toLocaleString();
+  const it = (type==='themes'?THEMES:COMPANIONS).find(x=>x.id===id);
+  showToast(`🛍 Purchased ${it.name}!`);
+  beep(550,90,.1); setTimeout(()=>beep(770,140,.1),100);
+  renderShop();
+}
+
+function equipItem(type, id){
+  if (type==='themes') { applyTheme(id); }
+  else { activeCompanion = id; Store.set('activeCompanion', id); drawCompanion(); }
+  const it = (type==='themes'?THEMES:COMPANIONS).find(x=>x.id===id);
+  showToast(`✓ ${it.name} equipped`);
+  renderShop();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPANION
+// ═══════════════════════════════════════════════════════════════
+const COMPANION_LINES = {
+  idle:      ["Let's get moving!", "Ready when you are.", "Step into frame!"],
+  good:      ["Nice form! 💪", "Looking strong!", "Keep that up!"],
+  warn:      ["Almost there — adjust a little.", "Check your form.", "Small tweak needed."],
+  rep:       ["That's one!", "Nice rep!", "Counting that 👍"],
+  challenge: ["Challenge complete! 🎉", "Credits earned!", "You're on a roll!"],
+  streak:    ["Streak alive! 🔥", "Don't break the chain!"],
+};
+let companionBubbleTimer = null;
+
+function drawCompanion(){
+  const svg = document.getElementById('companionSvg');
+  if (!svg) return;
+  const c = COMPANIONS.find(x=>x.id===activeCompanion) || COMPANIONS[0];
+  const col = c.color;
+  const getBaseType = (id) => {
+    if (id.startsWith('comp_blob')) return 'blob';
+    if (id.startsWith('comp_fox')) return 'fox';
+    if (id.startsWith('comp_owl')) return 'owl';
+    if (id.startsWith('comp_panda')) return 'panda';
+    if (id.startsWith('comp_robot')) return 'robot';
+    if (id.startsWith('comp_dragon')) return 'dragon';
+    if (id.startsWith('comp_cat')) return 'cat';
+    if (id.startsWith('comp_bear')) return 'bear';
+    return 'blob';
+  };
+  const baseType = getBaseType(c.id);
+  let body = '';
+  
+  if (baseType === 'blob') {
+    body = `<defs><radialGradient id="cgrad" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="${col}" stop-opacity="0.95"/><stop offset="100%" stop-color="${col}" stop-opacity="0.55"/></radialGradient></defs><g id="companionBody"><ellipse cx="32" cy="36" rx="22" ry="20" fill="url(#cgrad)"/><g id="companionEyeL" style="transform-origin:24px 32px"><circle cx="24" cy="32" r="4.2" fill="#0b0c0f"/><circle cx="25.3" cy="30.7" r="1.3" fill="#fff"><animate attributeName="cx" values="25.3;26.2;25.3;24.4;25.3" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.7;30.7;31.5;30.7;30.7" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR" style="transform-origin:40px 32px"><circle cx="40" cy="32" r="4.2" fill="#0b0c0f"/><circle cx="41.3" cy="30.7" r="1.3" fill="#fff"><animate attributeName="cx" values="41.3;42.2;41.3;40.4;41.3" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.7;30.7;31.5;30.7;30.7" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M24 42 Q32 48 40 42" stroke="#0b0c0f" stroke-width="2.4" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M24 42 Q32 48 40 42;M24 42 Q32 46 40 42;M24 44 Q32 48 40 44;M24 42 Q32 48 40 42" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'fox') {
+    body = `<g id="companionBody"><ellipse cx="32" cy="38" rx="18" ry="19" fill="${col}"/><polygon points="20,18 18,8 24,14" fill="${col}"/><polygon points="44,18 46,8 40,14" fill="${col}"/><g id="companionEyeL" style="transform-origin:26px 32px"><circle cx="26" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="27" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="27;27.8;27;26.2;27" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR" style="transform-origin:38px 32px"><circle cx="38" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="39" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="39;39.8;39;38.2;39" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M24 44 Q32 48 40 44" stroke="#0b0c0f" stroke-width="2" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M24 44 Q32 48 40 44;M24 44 Q32 46 40 44;M24 45 Q32 48 40 45;M24 44 Q32 48 40 44" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'owl') {
+    body = `<g id="companionBody"><circle cx="32" cy="36" r="20" fill="${col}"/><polygon points="18,22 20,12 26,18" fill="${col}"/><polygon points="46,22 44,12 38,18" fill="${col}"/><g id="companionEyeL" style="transform-origin:26px 34px"><circle cx="26" cy="34" r="5" fill="#fff"/><circle cx="26" cy="34" r="3.2" fill="#0b0c0f"/><circle cx="27.2" cy="32.8" r="1.3" fill="#fff"><animate attributeName="cx" values="27.2;28;27.2;26.4;27.2" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="32.8;32.8;33.4;32.8;32.8" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.05;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR" style="transform-origin:38px 34px"><circle cx="38" cy="34" r="5" fill="#fff"/><circle cx="38" cy="34" r="3.2" fill="#0b0c0f"/><circle cx="39.2" cy="32.8" r="1.3" fill="#fff"><animate attributeName="cx" values="39.2;40;39.2;38.4;39.2" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="32.8;32.8;33.4;32.8;32.8" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.05;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M28 42 Q32 46 36 42" stroke="#0b0c0f" stroke-width="2" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M28 42 Q32 46 36 42;M28 42 Q32 44 36 42;M28 43 Q32 46 36 43;M28 42 Q32 46 36 42" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'panda') {
+    body = `<g id="companionBody"><circle cx="32" cy="36" r="20" fill="${col}"/><circle cx="32" cy="36" r="19" fill="none" stroke="#0b0c0f" stroke-width="1"/><circle cx="24" cy="32" r="6.5" fill="#0b0c0f"/><circle cx="40" cy="32" r="6.5" fill="#0b0c0f"/><circle cx="24" cy="32" r="3" fill="#fff"/><circle cx="40" cy="32" r="3" fill="#fff"/><circle cx="25" cy="31" r="1.5" fill="#0b0c0f"><animate attributeName="cx" values="25;25.7;25;24.3;25" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="31;31;31.5;31;31" dur="6s" repeatCount="indefinite"/></circle><circle cx="41" cy="31" r="1.5" fill="#0b0c0f"><animate attributeName="cx" values="41;41.7;41;40.3;41" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="31;31;31.5;31;31" dur="6s" repeatCount="indefinite"/></circle><path d="M28 44 Q32 46 36 44" stroke="#0b0c0f" stroke-width="2" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M28 44 Q32 46 36 44;M28 44 Q32 44 36 44;M28 45 Q32 46 36 45;M28 44 Q32 46 36 44" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'robot') {
+    body = `<g id="companionBody"><rect x="18" y="24" width="28" height="28" rx="3" fill="${col}" stroke="#0b0c0f" stroke-width="1.5"/><polygon points="18,24 14,18 20,20" fill="${col}" stroke="#0b0c0f" stroke-width="1"/><polygon points="46,24 50,18 44,20" fill="${col}" stroke="#0b0c0f" stroke-width="1"/><rect x="22" y="30" width="4" height="4" rx="1" fill="#0b0c0f"/><rect x="38" y="30" width="4" height="4" rx="1" fill="#0b0c0f"/><g id="companionEyeL"><rect x="22.5" y="30.5" width="3" height="3" fill="#00ff87"><animate attributeName="x" values="22.5;23;22.5;22;22.5" dur="6s" repeatCount="indefinite"/></rect><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;0.3,0.3;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR"><rect x="38.5" y="30.5" width="3" height="3" fill="#00ff87"><animate attributeName="x" values="38.5;39;38.5;38;38.5" dur="6s" repeatCount="indefinite"/></rect><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;0.3,0.3;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M26 42 L26 46 M32 42 L32 46 M38 42 L38 46" stroke="#0b0c0f" stroke-width="1.5" stroke-linecap="round" id="companionMouth"/></g>`;
+  } else if (baseType === 'dragon') {
+    body = `<g id="companionBody"><ellipse cx="32" cy="36" rx="19" ry="21" fill="${col}"/><polygon points="15,28 10,24 13,32" fill="${col}"/><polygon points="49,28 54,24 51,32" fill="${col}"/><polygon points="32,15 28,8 30,16" fill="${col}"/><polygon points="32,15 36,8 34,16" fill="${col}"/><g id="companionEyeL"><circle cx="26" cy="32" r="3.8" fill="#0b0c0f"/><circle cx="27" cy="30.5" r="1.2" fill="#fff"><animate attributeName="cx" values="27;27.8;27;26.2;27" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR"><circle cx="38" cy="32" r="3.8" fill="#0b0c0f"/><circle cx="39" cy="30.5" r="1.2" fill="#fff"><animate attributeName="cx" values="39;39.8;39;38.2;39" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.1;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M24 43 Q32 48 40 43" stroke="#0b0c0f" stroke-width="2.2" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M24 43 Q32 48 40 43;M24 43 Q32 46 40 43;M24 44 Q32 48 40 44;M24 43 Q32 48 40 43" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'cat') {
+    body = `<g id="companionBody"><ellipse cx="32" cy="38" rx="18" ry="19" fill="${col}"/><polygon points="22,16 20,6 26,12" fill="${col}"/><polygon points="42,16 44,6 38,12" fill="${col}"/><ellipse cx="32" cy="40" rx="4" ry="5" fill="#0b0c0f"/><g id="companionEyeL"><circle cx="26" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="27" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="27;27.8;27;26.2;27" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.2;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR"><circle cx="38" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="39" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="39;39.8;39;38.2;39" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.2;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M26 43 Q32 46 38 43" stroke="#0b0c0f" stroke-width="1.8" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M26 43 Q32 46 38 43;M26 43 Q32 44 38 43;M26 44 Q32 46 38 44;M26 43 Q32 46 38 43" dur="5s" repeatCount="indefinite"/></path></g>`;
+  } else if (baseType === 'bear') {
+    body = `<g id="companionBody"><circle cx="32" cy="36" r="21" fill="${col}"/><circle cx="22" cy="20" r="4.5" fill="${col}"/><circle cx="42" cy="20" r="4.5" fill="${col}"/><g id="companionEyeL"><circle cx="26" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="27" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="27;27.8;27;26.2;27" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.15;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><g id="companionEyeR"><circle cx="38" cy="32" r="3.5" fill="#0b0c0f"/><circle cx="39" cy="30.5" r="1.1" fill="#fff"><animate attributeName="cx" values="39;39.8;39;38.2;39" dur="6s" repeatCount="indefinite"/><animate attributeName="cy" values="30.5;30.5;31;30.5;30.5" dur="6s" repeatCount="indefinite"/></circle><animateTransform attributeName="transform" type="scale" additive="sum" values="1,1;1,1;1,0.15;1,1;1,1" keyTimes="0;0.92;0.95;0.98;1" dur="4.6s" repeatCount="indefinite"/></g><path d="M26 45 Q32 48 38 45" stroke="#0b0c0f" stroke-width="2" fill="none" stroke-linecap="round" id="companionMouth"><animate attributeName="d" values="M26 45 Q32 48 38 45;M26 45 Q32 46 38 45;M26 46 Q32 48 38 46;M26 45 Q32 48 38 45" dur="5s" repeatCount="indefinite"/></path></g>`;
+  }
+  
+  svg.innerHTML = body + `<text x="32" y="13" text-anchor="middle" font-size="15">${c.emoji}</text>`;
+}
+
+function companionSay(category){
+  const bubble = document.getElementById('companionBubble');
+  if (!bubble) return;
+  const lines = COMPANION_LINES[category] || COMPANION_LINES.idle;
+  const line = lines[Math.floor(Math.random()*lines.length)];
+  bubble.textContent = line;
+  bubble.classList.add('show');
+  clearTimeout(companionBubbleTimer);
+  companionBubbleTimer = setTimeout(()=>bubble.classList.remove('show'), 2400);
+}
+
+function companionAnim(cls, dur){
+  const comp = document.getElementById('companion');
+  if (!comp) return;
+  comp.classList.remove('poked','celebrate');
+  void comp.offsetWidth;
+  comp.classList.add(cls);
+  setTimeout(()=>comp.classList.remove(cls), dur);
+}
+
+let lastCompanionReact = 0;
+function companionReact(category){
+  const now = Date.now();
+  const throttled = (category==='rep' || category==='good' || category==='warn') && (now - lastCompanionReact < 3500);
+  if (!throttled) { lastCompanionReact = now; companionSay(category); }
+
+  const mouth = document.getElementById('companionMouth');
+  if (mouth) {
+    if (category==='good' || category==='rep' || category==='challenge') mouth.setAttribute('d','M24 41 Q32 49 40 41');
+    else if (category==='warn') mouth.setAttribute('d','M25 44 Q32 40 39 44');
+    else mouth.setAttribute('d','M24 42 Q32 48 40 42');
+  }
+
+  if (category==='rep')             companionAnim('poked', 500);
+  else if (category==='challenge')  companionAnim('celebrate', 600);
+  else if (category==='good')       companionAnim('poked', 500);
+}
+
+function companionPoke(){
+  companionSay('idle');
+  companionAnim('poked', 500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION STATS
+// ═══════════════════════════════════════════════════════════════
+const SS = { stresses:[], forms:[], moods:[], totalReps:0 };
+
+// ═══════════════════════════════════════════════════════════════
+// CODE REDEMPTION SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const CODES = {
+  'WELCOME100': { credits: 100, desc: 'Welcome bonus' },
+  'FITFIRST': { credits: 250, desc: 'First time user' },
+  'GRIND500': { credits: 500, desc: 'Grind it out' },
+  'STREAKFIRE': { credits: 1000, desc: 'On a streak!' },
+  'FORMMASTER': { credits: 300, desc: 'Form is king' },
+  'PUSHHARD': { credits: 200, desc: 'Push hard' },
+  'NOMORROW': { credits: 150, desc: 'Never quit' },
+};
+
+const redeemedCodes = new Set(Store.get('redeemedCodes', []));
+
+function openCodeModal() {
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeMessage').textContent = '';
+  document.getElementById('codeModal').classList.add('open');
+  setTimeout(() => document.getElementById('codeInput').focus(), 300);
+}
+
+function closeCodeModal() {
+  document.getElementById('codeModal').classList.remove('open');
+}
+
+function submitCode() {
+  const codeInput = document.getElementById('codeInput');
+  const code = codeInput.value.trim().toUpperCase();
+  const msgEl = document.getElementById('codeMessage');
+  
+  if (!code) {
+    msgEl.className = 'code-message error';
+    msgEl.textContent = '❌ Please enter a code';
+    return;
+  }
+  
+  if (!CODES[code]) {
+    msgEl.className = 'code-message error';
+    msgEl.textContent = '❌ Invalid code';
+    beep(200, 150, 0.1);
+    return;
+  }
+  
+  if (redeemedCodes.has(code)) {
+    msgEl.className = 'code-message error';
+    msgEl.textContent = '❌ Already redeemed';
+    beep(200, 150, 0.1);
+    return;
+  }
+  
+  const reward = CODES[code];
+  redeemedCodes.add(code);
+  Store.set('redeemedCodes', [...redeemedCodes]);
+  awardCredits(reward.credits, 'p');
+  
+  msgEl.className = 'code-message success';
+  msgEl.textContent = `✅ +${reward.credits}⭐ (${reward.desc})`;
+  beep(880, 120, 0.15);
+  setTimeout(() => beep(1100, 120, 0.15), 150);
+  
+  codeInput.value = '';
+  setTimeout(() => {
+    closeCodeModal();
+    refreshDash();
+  }, 1500);
+}
+
+function openCreditModal() {
+  document.getElementById('creditInput').value = '';
+  document.getElementById('creditMessage').textContent = '';
+  document.getElementById('creditModal').classList.add('open');
+  setTimeout(() => document.getElementById('creditInput').focus(), 300);
+}
+
+function closeCreditModal() {
+  document.getElementById('creditModal').classList.remove('open');
+}
+
+function addCredits() {
+  const creditInput = document.getElementById('creditInput');
+  const value = creditInput.value.trim();
+  const amount = parseInt(value);
+  const msgEl = document.getElementById('creditMessage');
+  
+  if (!value || isNaN(amount) || amount <= 0) {
+    msgEl.className = 'code-message error';
+    msgEl.textContent = '❌ Enter a valid number';
+    beep(200, 150, 0.1);
+    return;
+  }
+  
+  if (amount > 999999) {
+    msgEl.className = 'code-message error';
+    msgEl.textContent = '❌ Max 999,999 credits';
+    beep(200, 150, 0.1);
+    return;
+  }
+  
+  G.totalCredits += amount;
+  Store.set('totalCredits', G.totalCredits);
+  
+  msgEl.className = 'code-message success';
+  msgEl.textContent = `✅ +${amount}⭐ added!`;
+  beep(880, 120, 0.15);
+  setTimeout(() => beep(1100, 120, 0.15), 150);
+  
+  creditInput.value = '';
+  setTimeout(() => {
+    closeCreditModal();
+    if (typeof refreshDash === 'function') refreshDash();
+  }, 1500);
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('creditModal').classList.contains('open')) {
+    closeCreditModal();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// EXERCISE DETECTION
+// ═══════════════════════════════════════════════════════════════
+let forceExercise = null;
+let lastExerciseChange = 0;
+const EXERCISE_SWITCH_DELAY = 2000;
+
+function selectExercise(ex) {
+  forceExercise = ex || null;
+  if (forceExercise) {
+    showToast(`📌 Locked to ${ex}`);
+    beep(660, 100, 0.1);
+  } else {
+    showToast(`🔓 Auto-detection enabled`);
+  }
+}
+
+function releaseExerciseSelection() {
+  forceExercise = null;
+  const dropdown = document.getElementById('exerciseDropdown');
+  if (dropdown) dropdown.value = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && camActive && RS.reps > 0) {
+    e.preventDefault();
+    nextSet();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// REP COUNTING
+// ═══════════════════════════════════════════════════════════════
+const REP_TARGET = {'Squat':10,'Deadlift':8,'Push-up':10,'Overhead Press':6};
+const TOTAL_SETS = 3;
+const PH = {
+  'Squat':         {prim:'l_knee',  dn:110, up:155},
+  'Deadlift':      {prim:'l_hip',   dn:70,  up:130},
+  'Push-up':       {prim:'l_elbow', dn:100, up:150},
+  'Overhead Press':{prim:'l_elbow', dn:110, up:155},
+};
+const RS = { ex:'', phase:'up', reps:0, sets:[], set:1, formAcc:[] };
+
+function updateReps(ex, angles, fscore) {
+  const ph = PH[ex]; if (!ph || !(ph.prim in angles)) return;
+  if (RS.ex !== ex) { RS.ex=ex; RS.phase='up'; RS.reps=0; RS.formAcc=[]; }
+  RS.formAcc.push(fscore);
+  const a = angles[ph.prim];
+  if (RS.phase==='up' && a < ph.dn) { RS.phase='down'; }
+  else if (RS.phase==='down' && a > ph.up) {
+    RS.phase='up'; RS.reps++; SS.totalReps++;
+    const n = document.getElementById('repnum');
+    if(n){ n.textContent=RS.reps; n.classList.add('flash'); setTimeout(()=>n.classList.remove('flash'),280); }
+    beep(880,35,.05);
+    companionReact('rep');
+    TC.forEach(c=>{
+      if(CP[c.id].done) return;
+      const t=c.tgt;
+      const exOk = !t.ex || t.ex===ex;
+      const fOk  = fscore >= (t.form||0);
+      const sOk  = !t.stressMax || F.stress<=t.stressMax;
+      if(exOk&&fOk&&sOk){
+        CP[c.id].p = Math.min(RS.reps, t.reps||999);
+        if(CP[c.id].p>=(t.reps||0)){
+          const setsOk=!t.sets||RS.sets.length>=t.sets;
+          if(setsOk) completeChallenge(c);
+        }
+        Store.set('cp_chal_'+today, CP);
+      }
+    });
+    updateSetUI();
+    updateRepRing();
+  }
+}
+
+function nextSet() {
+  if (RS.reps===0) return;
+  const avg = RS.formAcc.length ? Math.round(RS.formAcc.reduce((a,b)=>a+b)/RS.formAcc.length) : 0;
+  RS.sets.push({reps:RS.reps, form:avg}); RS.reps=0; RS.formAcc=[]; RS.set=RS.sets.length+1;
+  awardCredits(RS.sets[RS.sets.length-1].reps*3,'p');
+  TC.forEach(c=>{
+    if(CP[c.id].done) return;
+    if(c.tgt.sets && RS.sets.length>=c.tgt.sets && CP[c.id].p>=(c.tgt.reps||0)) completeChallenge(c);
+  });
+  updateSetUI(); updateRepRing();
+  showToast(`Set ${RS.sets.length} saved — ${RS.sets[RS.sets.length-1].reps} reps ✓`);
+  beep(440,100,.1);
+}
+
+function updateSetUI() {
+  const el = document.getElementById('settracker'); if(!el) return;
+  const target = REP_TARGET[RS.ex]||10;
+  let h='';
+  for(let i=0;i<TOTAL_SETS;i++){
+    const d=RS.sets[i];
+    const sc = d?'done':i===RS.sets.length?'active':'todo';
+    const rowClass = sc === 'active' ? 'set-row active-set' : sc === 'done' ? 'set-row completed-set' : 'set-row';
+    h+=`<div class="${rowClass}">
+      <div class="set-n" onclick="highlightSet(${i})" style="cursor:pointer;">Set ${i+1}</div>
+      <div>${d?`<span class="set-r">${d.reps}</span><span class="set-rl"> reps</span>`:`<span class="set-rl" style="color:var(--dim)">— / ${target}</span>`}</div>
+      <div class="set-s ${sc}" onclick="quickCompleteSet(${i})" style="cursor:pointer;">${d?`✓ ${d.form}%`:sc==='active'?'● live':'○'}</div>
+    </div>`;
+  }
+  el.innerHTML=h;
+  const rs=document.getElementById('repset'); if(rs) rs.textContent=`SET ${RS.sets.length+1}`;
+  const sa=document.getElementById('rsets'),sv=document.getElementById('rsetsv');
+  if(sa&&sv){ sa.style.strokeDashoffset=182.2-Math.min(RS.sets.length/TOTAL_SETS,1)*182.2; sv.textContent=RS.sets.length; }
+  const t2=REP_TARGET[RS.ex]||10, pct=Math.min(RS.reps/t2*100,100);
+  const bar=document.getElementById('rpbar'),lbl=document.getElementById('rppct'),tgt=document.getElementById('rttarget');
+  if(bar) bar.style.width=pct+'%';
+  if(lbl) lbl.textContent=`${RS.reps} / ${t2}`;
+  if(tgt) tgt.textContent=t2;
+}
+
+function highlightSet(idx) {
+  if (RS.sets[idx]) {
+    showToast(`Set ${idx+1}: ${RS.sets[idx].reps} reps @ ${RS.sets[idx].form}% form`);
+  }
+}
+
+function quickCompleteSet(idx) {
+  if (RS.sets[idx] || idx === RS.sets.length) {
+    nextSet();
+  }
+}
+
+function updateRepRing(){
+  const t=REP_TARGET[RS.ex]||10;
+  const a=document.getElementById('rreps'),v=document.getElementById('rrepsv');
+  if(a&&v){ a.style.strokeDashoffset=182.2-Math.min(RS.reps/t,1)*182.2; v.textContent=RS.reps; }
+  const rn=document.getElementById('repnum'); if(rn) rn.textContent=RS.reps;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════════════
+let AC=null;
+function beep(f,d,v){
+  try{
+    if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.connect(g);g.connect(AC.destination);
+    o.frequency.value=f;g.gain.value=v;
+    o.start();o.stop(AC.currentTime+d/1000);
+  }catch(_){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEEPFACE SIDECAR
+// ═══════════════════════════════════════════════════════════════
+const DF_URL=window.FORMCHECK_DF_URL || 'http://localhost:5001';
+let dfOk=false, dfBusy=false, dfRetry=0;
+
+async function checkDF(){
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const r = await fetch(`${DF_URL}/health`, {signal: controller.signal, method: 'GET', headers: {'Accept': 'application/json'}});
+    clearTimeout(timeoutId);
+    const was = dfOk;
+    dfOk = r.ok;
+    if (dfOk && !was) { setBadge(true, 'DeepFace neural net'); console.log('✅ DeepFace connected'); }
+    if (!dfOk && was) { setBadge(false, 'geometric fallback'); console.warn('⚠️ DeepFace disconnected'); }
+  } catch (error) {
+    if (dfOk) { dfOk = false; setBadge(false, 'geometric fallback'); console.warn('⚠️ DeepFace connection lost:', error.message); }
+  }
+}
+
+setInterval(checkDF, DF_POLL);
+checkDF();
+
+function setBadge(on, lbl) {
+  const b = document.getElementById('dfbadge');
+  const l = document.getElementById('dflbl');
+  if (b) b.className = 'dfbadge' + (on ? ' on' : '');
+  if (l) l.textContent = lbl;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SMARTWATCH (ESP32) — live heart rate / SpO2 / stress
+// ═══════════════════════════════════════════════════════════════
+const V={hr:null,spo2:null,stress:null,connected:false,lastSeen:0};
+const SMARTWATCH_POLL = 3000;
+
+function setWatchBadge(on, lbl){
+  const b=document.getElementById('watchbadge'), l=document.getElementById('watchlbl');
+  if(b) b.className='dfbadge'+(on?' on':'');
+  if(l) l.textContent=lbl;
+}
+
+async function pollSmartwatch(){
+  if (!adaptiveSystem.serverUrl) return;
+  try{
+    const controller=new AbortController();
+    const timeoutId=setTimeout(()=>controller.abort(),2000);
+    const r=await fetch(`${adaptiveSystem.serverUrl}/api/devices/smartwatch/latest`, {
+      signal:controller.signal, headers: adaptiveSystem._headers()
+    });
+    clearTimeout(timeoutId);
+    if(!r.ok){ if(V.connected){V.connected=false;setWatchBadge(false,'no smartwatch');} return; }
+    const d=await r.json();
+    if(!d || !d.available){ if(V.connected){V.connected=false;setWatchBadge(false,'no smartwatch');} return; }
+    V.hr=d.heart_rate; V.spo2=d.spo2; V.stress=d.stress; V.connected=true; V.lastSeen=Date.now();
+    setWatchBadge(true, `watch · ${d.heart_rate} bpm`);
+    const hrEl=document.getElementById('vhr'), spEl=document.getElementById('vspo2');
+    if(hrEl) hrEl.textContent = V.hr!=null ? `${V.hr} bpm` : '—';
+    if(spEl) spEl.textContent = V.spo2!=null ? `${V.spo2}%` : '—';
+    // real biometric stress overrides the facial-estimate stress when a watch is connected
+    if (V.stress!=null) { F.stress = V.stress; updateWellnessUI(); }
+  }catch(error){
+    if(V.connected){ V.connected=false; setWatchBadge(false,'no smartwatch'); }
+  }
+}
+setInterval(pollSmartwatch, SMARTWATCH_POLL);
+pollSmartwatch();
+
+async function runDF(video){
+  if (dfBusy || Date.now() < dfRetry) return;
+  dfBusy = true;
+  try {
+    const c = document.createElement('canvas');
+    c.width = 160;
+    c.height = 160;
+    c.getContext('2d').drawImage(video, 0, 0, 160, 160);
+    const b64 = c.toDataURL('image/jpeg', .75).split(',')[1];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const r = await fetch(`${DF_URL}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: b64 }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!r.ok) { dfRetry = Date.now() + 3000; return; }
+    const d = await r.json();
+    if (d.mood) F.mood = d.mood;
+    if (d.confidence != null) F.conf = d.confidence;
+    if (d.stress != null) F.stress = d.stress;
+    console.log(`😊 Mood: ${d.mood} (stress: ${d.stress}%)`);
+    updateWellnessUI();
+  } catch (error) {
+    console.warn('DeepFace error:', error.message);
+    dfRetry = Date.now() + 3000;
+  } finally {
+    dfBusy = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// POSE / ANGLES / FORM
+// ═══════════════════════════════════════════════════════════════
+let showIdeal=true, showSkel=true, camActive=false, poseReady=false;
+let camUtil=null, frameN=0, lastFps=Date.now(), fpsC=0;
+const HIST={f:[],s:[]}, HMAX=50, aH={}, SMOOTH=4;
+const bkS={fr:0,st:[]};
+const F={mood:'—',conf:0,stress:0,blink:0};
+
+const LM={N:0,LE:2,RE:5,LS:11,RS:12,LL:13,RL:14,LW:15,RW:16,LH:23,RH:24,LK:25,RK:26,LA:27,RA:28};
+const ang=(a,b,c)=>{const ba=[a[0]-b[0],a[1]-b[1]],bc=[c[0]-b[0],c[1]-b[1]];const d=ba[0]*bc[0]+ba[1]*bc[1],m=Math.hypot(...ba)*Math.hypot(...bc)+1e-8;return Math.round(Math.acos(Math.max(-1,Math.min(1,d/m)))*180/Math.PI);};
+const smo=(k,v)=>{if(!aH[k])aH[k]=[];aH[k].push(v);if(aH[k].length>SMOOTH)aH[k].shift();return Math.round(aH[k].reduce((a,b)=>a+b)/aH[k].length);};
+const XY=(l,i)=>[l[i].x,l[i].y];
+const VIS=(l,i)=>(l[i].visibility||0)>0.4;
+const MID=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+
+function detectEx(l){
+  if (forceExercise) return forceExercise;
+  const lH=l[LM.LH],rH=l[LM.RH],lS=l[LM.LS],rS=l[LM.RS],lW=l[LM.LW],rW=l[LM.RW];
+  const hipY=(lH.y+rH.y)/2,shY=(lS.y+rS.y)/2,wrY=(lW.y+rW.y)/2;
+  const dX=Math.abs((lS.x+rS.x)/2-(lH.x+rH.x)/2),torH=Math.abs(shY-hipY);
+  let detected = 'Standing';
+  if(torH<0.15) detected = 'Push-up';
+  else if(wrY<shY-.08) detected = 'Overhead Press';
+  else if(dX>0.12&&torH>0.2) detected = 'Deadlift';
+  else if(hipY>0.58) detected = 'Squat';
+  const now = Date.now();
+  if (detected !== RS.ex && now - lastExerciseChange > EXERCISE_SWITCH_DELAY) {
+    lastExerciseChange = now;
+    return detected;
+  }
+  return RS.ex || detected;
+}
+
+const RULES={
+  'Squat':         {l_knee:{i:90,t:20},r_knee:{i:90,t:20},l_hip:{i:80,t:20},r_hip:{i:80,t:20},spine:{i:170,t:15}},
+  'Deadlift':      {l_knee:{i:160,t:20},r_knee:{i:160,t:20},l_hip:{i:45,t:20},r_hip:{i:45,t:20},spine:{i:165,t:10}},
+  'Push-up':       {l_elbow:{i:90,t:20},r_elbow:{i:90,t:20},spine:{i:175,t:10},l_hip:{i:175,t:10},r_hip:{i:175,t:10}},
+  'Overhead Press':{l_elbow:{i:160,t:15},r_elbow:{i:160,t:15},spine:{i:175,t:10},l_hip:{i:175,t:10}},
+  'Standing':      {spine:{i:175,t:10},l_hip:{i:175,t:10},r_hip:{i:175,t:10}},
+};
+
+function compAngles(l){
+  const g=i=>XY(l,i),ms=MID(g(LM.LS),g(LM.RS)),mh=MID(g(LM.LH),g(LM.RH)),mk=MID(g(LM.LK),g(LM.RK));
+  return{
+    l_knee:smo('lk',ang(g(LM.LH),g(LM.LK),g(LM.LA))),r_knee:smo('rk',ang(g(LM.RH),g(LM.RK),g(LM.RA))),
+    l_hip:smo('lh',ang(g(LM.LS),g(LM.LH),g(LM.LK))),r_hip:smo('rh',ang(g(LM.RS),g(LM.RH),g(LM.RK))),
+    l_elbow:smo('le',ang(g(LM.LS),g(LM.LL),g(LM.LW))),r_elbow:smo('re',ang(g(LM.RS),g(LM.RL),g(LM.RW))),
+    spine:smo('sp',ang(ms,mh,mk)),
+  };
+}
+
+function scoreForm(a,ex){
+  const R=RULES[ex]||RULES['Standing'],sc=[],al=[],st={};
+  for(const[k,r]of Object.entries(R)){
+    if(!(k in a))continue;
+    const dv=Math.abs(a[k]-r.i);let s,ss;
+    if(dv<=r.t*.5){ss='good';s=100;}
+    else if(dv<=r.t){ss='warning';s=70;al.push(`${k.replace(/_/g,' ')}: ${a[k]}° → ${r.i}°`);}
+    else{ss='poor';s=Math.max(0,100-(dv-r.t)*2);al.push(`${k.replace(/_/g,' ')}: ${a[k]}° → ${r.i}°`);}
+    sc.push(s);st[k]={measured:a[k],ideal:r.i,status:ss};
+  }
+  return{score:sc.length?Math.round(sc.reduce((a,b)=>a+b)/sc.length):0,alerts:al.slice(0,2),status:st};
+}
+
+const SC2={good:'#00ff87',warning:'#ffcc00',poor:'#ff3d5a'};
+const JKmap={l_knee:LM.LK,r_knee:LM.RK,l_hip:LM.LH,r_hip:LM.RH,l_elbow:LM.LL,r_elbow:LM.RL};
+const SKEL=[[LM.LS,LM.RS],[LM.LS,LM.LH],[LM.RS,LM.RH],[LM.LH,LM.RH],[LM.LS,LM.LL],[LM.LL,LM.LW],[LM.RS,LM.RL],[LM.RL,LM.RW],[LM.LH,LM.LK],[LM.LK,LM.LA],[LM.RH,LM.RK],[LM.RK,LM.RA],[LM.N,LM.LE],[LM.N,LM.RE]];
+const BIGS=new Set([LM.LK,LM.RK,LM.LH,LM.RH,LM.LL,LM.RL]);
+
+function idealConns(ex,l){
+  const R=RULES[ex]||RULES['Standing'],g=i=>XY(l,i);
+  const lHp=g(LM.LH),rHp=g(LM.RH),lSh=g(LM.LS),rSh=g(LM.RS);
+  const len=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const rot=(v,d)=>{const r=d*Math.PI/180;return[Math.cos(r)*v[0]-Math.sin(r)*v[1],Math.sin(r)*v[0]+Math.cos(r)*v[1]];};
+  const dn=[0,1],kA=(R.l_knee||{}).i||170,hA=(R.l_hip||{}).i||170,eA=(R.l_elbow||{}).i||170;
+  const limb=(hp,tl,sl,ha,ka)=>{const td=rot(dn,ha-170),kn=[hp[0]+td[0]*tl,hp[1]+td[1]*tl],sd=rot(td,-(180-ka)),an=[kn[0]+sd[0]*sl,kn[1]+sd[1]*sl];return{kn,an};};
+  const arm=(sh,ul,fl,ea)=>{const ep=[sh[0]+dn[0]*ul,sh[1]+dn[1]*ul],fd=rot(dn,-(180-ea)),wp=[ep[0]+fd[0]*fl,ep[1]+fd[1]*fl];return{ep,wp};};
+  const lL=limb(lHp,len(lHp,g(LM.LK)),len(g(LM.LK),g(LM.LA)),hA,kA);
+  const rL=limb(rHp,len(rHp,g(LM.RK)),len(g(LM.RK),g(LM.RA)),hA,kA);
+  const lA=arm(lSh,len(lSh,g(LM.LL)),len(g(LM.LL),g(LM.LW)),eA);
+  const rA=arm(rSh,len(rSh,g(LM.RL)),len(g(LM.RL),g(LM.RW)),eA);
+  return[[lSh,lA.ep],[lA.ep,lA.wp],[rSh,rA.ep],[rA.ep,rA.wp],[lHp,lL.kn],[lL.kn,lL.an],[rHp,rL.kn],[rL.kn,rL.an],[lSh,rSh],[lHp,rHp],[lSh,lHp],[rSh,rHp]];
+}
+
+function drawFrame(canvas,lms,jst,ex){
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H); if(!lms) return;
+  const px=lm=>[lm.x*W,lm.y*H];
+  if(showIdeal){
+    const ic=idealConns(ex,lms);
+    ctx.save();ctx.globalAlpha=.38;ctx.strokeStyle='#4488ff';ctx.lineWidth=2.5;ctx.setLineDash([7,5]);
+    for(const[a,b]of ic){ctx.beginPath();ctx.moveTo(a[0]*W,a[1]*H);ctx.lineTo(b[0]*W,b[1]*H);ctx.stroke();}
+    ctx.fillStyle='#4488ff55';ctx.setLineDash([]);
+    for(const[a]of ic){ctx.beginPath();ctx.arc(a[0]*W,a[1]*H,4,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+  }
+  if(showSkel){
+    ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=2;ctx.setLineDash([]);
+    for(const[a,b]of SKEL){if(!VIS(lms,a)||!VIS(lms,b))continue;const[ax,ay]=px(lms[a]),[bx,by]=px(lms[b]);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.stroke();}
+    ctx.restore();
+    for(const idx of [LM.N,LM.LS,LM.RS,LM.LL,LM.RL,LM.LW,LM.RW,LM.LH,LM.RH,LM.LK,LM.RK,LM.LA,LM.RA,LM.LE,LM.RE]){
+      if(!VIS(lms,idx))continue;
+      const[jx,jy]=px(lms[idx]);let col='#fff';
+      for(const[n,ji]of Object.entries(JKmap)){if(ji===idx&&jst[n]){col=SC2[jst[n].status]||col;break;}}
+      const r=BIGS.has(idx)?8:5;
+      ctx.beginPath();ctx.arc(jx,jy,r+2,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.6)';ctx.fill();
+      ctx.beginPath();ctx.arc(jx,jy,r,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    }
+  }
+}
+
+const C2=182.2;
+function ring(id,vid,v,max,col){const a=document.getElementById(id),vv=document.getElementById(vid);if(!a||!vv)return;a.style.strokeDashoffset=C2-Math.min(v/max,1)*C2;a.style.stroke=col;vv.textContent=v;}
+
+function updateJoints(st){
+  const el=document.getElementById('jointlist');if(!st||!Object.keys(st).length){el.innerHTML='<div style="font-size:10px;color:var(--dim)">No pose detected</div>';return;}
+  el.innerHTML=Object.entries(st).map(([k,info])=>{const c=SC2[info.status]||'#888',p=Math.max(0,100-Math.abs(info.measured-info.ideal)*3);
+    return`<div class="jr"><div class="jdot" style="background:${c}"></div><div class="jname">${k.replace(/_/g,' ')}</div><div class="jv" style="color:${c}">${info.measured}°</div><div class="jarr">→</div><div class="jidl">${info.ideal}°</div><div class="jbar"><div class="jbf" style="width:${p}%;background:${c}"></div></div></div>`;
+  }).join('');
+}
+
+let spFrameN=0;
+function updateSparks(){
+  spFrameN++;if(spFrameN%SPARKLINE_EVERY!==0)return;
+  const W=272,H=36,pts=arr=>arr.length<2?'':arr.map((v,i)=>`${i*(W/(arr.length-1))},${H-v/100*(H-5)+2}`).join(' ');
+  const sf=document.getElementById('spform'),ss=document.getElementById('spstress');
+  if(sf)sf.setAttribute('points',pts(HIST.f));if(ss)ss.setAttribute('points',pts(HIST.s));
+}
+
+const MCOL={Happy:'#00ff87',Energised:'#00ff87',Focused:'#4488ff',Tired:'#ffcc00',Stressed:'#ff3d5a',Angry:'#ff3d5a',Neutral:'#888',Sad:'#88aaff'};
+
+function updateWellnessUI(){
+  const mc=MCOL[F.mood]||'#888';
+  const dot=document.getElementById('moodglow'),nm=document.getElementById('moodname'),cf=document.getElementById('moodconf');
+  if(dot){dot.style.background=mc;dot.style.boxShadow=`0 0 8px ${mc}44`;}
+  if(nm){nm.textContent=F.mood;nm.style.color=mc;}
+  if(cf)cf.textContent=F.conf+'% conf';
+  const sc2=F.stress>70?'#ff3d5a':F.stress>40?'#ffcc00':'#00ff87';
+  const sb=document.getElementById('stressb'),sv=document.getElementById('stressv');
+  if(sb){sb.style.width=Math.min(F.stress,100)+'%';sb.style.background=sc2;}
+  if(sv){sv.style.color=sc2;sv.textContent=F.stress+'%';}
+  const bb=document.getElementById('blinkb'),bv=document.getElementById('blinkv');
+  if(bb)bb.style.width=Math.min(F.blink/40*100,100)+'%';
+  if(bv)bv.textContent=F.blink;
+  SS.stresses.push(F.stress);if(!SS.moods.includes(F.mood))SS.moods.push(F.mood);
+  TC.forEach(c=>{
+    if(CP[c.id].done||c.t!=='mental')return;
+    const t=c.tgt;
+    const ok=(t.stressMax&&F.stress<=t.stressMax)||(t.moods&&t.moods.includes(F.mood))||(t.blinkMin&&F.blink>=t.blinkMin);
+    if(ok){CP[c.id].p=Math.min((CP[c.id].p||0)+1,t.dur||30);if(CP[c.id].p>=(t.dur||30))completeChallenge(c);Store.set('cp_chal_'+today,CP);}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FACEMESH
+// ═══════════════════════════════════════════════════════════════
+let FMModel=null, FMReady=false, FMBusy=false, faceLoopHandle=null;
+let lastFaceOk=0;
+
+function loadFaceMesh(){
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js';
+  script.crossOrigin='anonymous';
+  script.onload=()=>{
+    FMModel=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${f}`});
+    FMModel.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
+    FMModel.onResults(fmResults);
+    FMReady=true;
+    startFaceLoop();
+  };
+  script.onerror=()=>{
+    console.warn('FaceMesh failed to load from CDN');
+    const lbl=document.getElementById('dflbl'), badge=document.getElementById('dfbadge');
+    if (lbl) lbl.textContent = 'face model load failed';
+    if (badge) badge.className = 'dfbadge';
+  };
+  document.head.appendChild(script);
+}
+
+function startFaceLoop(){
+  if (faceLoopHandle) clearInterval(faceLoopHandle);
+  faceLoopHandle = setInterval(async ()=>{
+    if (!FMReady || FMBusy || !camActive) return;
+    const video=document.getElementById('webcam');
+    if (!video || video.readyState < 2 || video.videoWidth===0) return;
+    FMBusy = true;
+    try { await FMModel.send({image: video}); }
+    catch(e){ }
+    finally { FMBusy = false; }
+  }, FACE_INTERVAL);
+}
+
+function fmResults(res){
+  if(!res.multiFaceLandmarks?.length){
+    setFaceIndicator(false);
+    return;
+  }
+  lastFaceOk = Date.now();
+  setFaceIndicator(true);
+  const l=res.multiFaceLandmarks[0];
+  const ear=pts=>{const p=pts.map(i=>l[i]);const A=Math.hypot(p[1].x-p[5].x,p[1].y-p[5].y),B=Math.hypot(p[2].x-p[4].x,p[2].y-p[4].y),C=Math.hypot(p[0].x-p[3].x,p[0].y-p[3].y)+1e-8;return(A+B)/(2*C);};
+  const avgE=(ear([362,385,387,263,373,380])+ear([33,160,158,133,153,144]))/2;
+  if(avgE<.22)bkS.fr++;else{if(bkS.fr>=2)bkS.st.push(Date.now());bkS.fr=0;}
+  const now=Date.now();bkS.st=bkS.st.filter(t=>now-t<60000);F.blink=bkS.st.length;
+  if(!dfOk){
+    const ml=l[61],mr=l[291],mt=l[13],mb=l[14];
+    const mw=Math.hypot(ml.x-mr.x,ml.y-mr.y),mo=Math.hypot(mt.x-mb.x,mt.y-mb.y)+.01,sR=mw/mo;
+    const lBt=l[105],lEt=l[159],rBt=l[334],rEt=l[386],bH=((lEt.y-lBt.y)+(rEt.y-rBt.y))/2;
+    const fat=Math.round(Math.max(0,Math.min(100,(.35-avgE)/.15*100)));
+    F.stress=Math.round(Math.min(100,Math.max(0,(bH<.04?60:20)+(F.blink>25?20:0)+fat*.3)));
+    let md='Neutral',cn=60;
+    if(avgE<.18){md='Tired';cn=75;}else if(sR>3.5){md='Happy';cn=70;}else if(F.stress>65){md='Stressed';cn=65;}else if(bH>.06){md='Focused';cn=60;}else if(F.blink>30){md='Tired';cn=65;}
+    F.mood=md;F.conf=cn;
+  }
+  updateWellnessUI();
+}
+
+function setFaceIndicator(ok){
+  const badge=document.getElementById('dfbadge');
+  if (!badge) return;
+  if (!dfOk) {
+    const lbl=document.getElementById('dflbl');
+    if (lbl) lbl.textContent = ok ? 'face tracking active' : 'no face detected';
+    badge.className = 'dfbadge' + (ok ? ' on' : '');
+  }
+}
+
+setInterval(()=>{
+  if (!camActive) return;
+  if (FMReady && lastFaceOk && Date.now()-lastFaceOk > 8000) {
+    setFaceIndicator(false);
+  }
+}, 4000);
+
+// ═══════════════════════════════════════════════════════════════
+// POSE MODEL
+// ═══════════════════════════════════════════════════════════════
+let PoseModel=null;
+
+async function initModels(){
+  setSP(20,'Loading pose model…');
+  PoseModel=new Pose({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+  PoseModel.setOptions({modelComplexity:0,smoothLandmarks:true,enableSegmentation:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
+  PoseModel.onResults(onPose);
+  setSP(100,'Ready — click Start Cam');
+  await new Promise(r=>setTimeout(r,400));
+  document.getElementById('splash').classList.add('gone');
+  poseReady=true;
+  updateSetUI();
+  setTimeout(loadFaceMesh, 3000);
+}
+
+function setSP(p,m){const b=document.getElementById('sfill'),ms=document.getElementById('smsg');if(b)b.style.width=p+'%';if(ms)ms.textContent=m;}
+
+function onPose(res){
+  const video=document.getElementById('webcam'),canvas=document.getElementById('overlay');
+  canvas.width=video.videoWidth||640;canvas.height=video.videoHeight||480;
+
+  fpsC++;const now=Date.now();
+  if(now-lastFps>=1000){document.getElementById('hudfps').textContent=fpsC+' fps';fpsC=0;lastFps=now;}
+
+  const lms=res.poseLandmarks;
+  if(!lms){
+    drawFrame(canvas,null,{},'Standing');
+    document.getElementById('hudex').style.display='none';
+    document.getElementById('rephud').style.display='none';
+    document.getElementById('livepill').classList.remove('on');
+    document.getElementById('livetxt').textContent='NO POSE';
+    document.getElementById('hudlive').textContent='';
+    const ab=document.getElementById('alertbox');ab.className='alert idle';ab.textContent='No person in frame';
+    updateJoints(null);return;
+  }
+
+  document.getElementById('livepill').classList.add('on');
+  document.getElementById('livetxt').textContent='LIVE';
+  document.getElementById('hudlive').textContent='● LIVE';
+
+  const ex=detectEx(lms),angles=compAngles(lms);
+  const{score,alerts,status}=scoreForm(angles,ex);
+
+  updateReps(ex,angles,score);
+  drawFrame(canvas,lms,status,ex);
+
+  const hx=document.getElementById('hudex');hx.textContent=ex;hx.style.display='block';
+  const rh=document.getElementById('rephud');rh.style.display=PH[ex]?'flex':'none';
+  document.getElementById('exname').textContent=ex;
+
+  ring('rform','rformv',score,100,score>=80?'#00ff87':score>=60?'#ffcc00':'#ff3d5a');
+  updateRepRing();
+  updateSetUI();
+
+  const ab=document.getElementById('alertbox');
+  if(alerts.length){ab.className='alert warn';ab.innerHTML=alerts.map(a=>`⚠ ${a}`).join('<br>');companionReact('warn');}
+  else{ab.className='alert good';ab.textContent='✓ Form looks good';companionReact('good');}
+
+  updateJoints(status);
+  SS.forms.push(score);
+  HIST.f.push(score);HIST.s.push(F.stress);
+  if(HIST.f.length>HMAX)HIST.f.shift();if(HIST.s.length>HMAX)HIST.s.shift();
+  updateSparks();
+
+  if(now-lastFaceRun>FACE_INTERVAL){
+    lastFaceRun=now;
+    if(dfOk) runDF(video);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════════════
+let lastFaceRun=0;
+
+async function toggleCam(){if(!camActive)await startCam();else stopCam();}
+
+let esp32Timer=null;
+
+async function startCam(){
+  const btn=document.getElementById('btn-cam');btn.textContent='STARTING…';btn.disabled=true;
+  const esp32Url = window.FORMCHECK_ESP32_CAM_URL;
+  if (esp32Url) {
+    // ── ESP32-CAM MJPEG stream source (configured via the Streamlit "Devices" panel) ──
+    try{
+      const img=document.getElementById('esp32cam');
+      img.src = esp32Url;
+      await new Promise((resolve,reject)=>{
+        const t=setTimeout(()=>resolve(),2000); // don't hang forever if the stream is slow to start
+        img.onload = ()=>{clearTimeout(t);resolve();};
+        img.onerror = ()=>{clearTimeout(t);reject(new Error('stream unreachable'));};
+      });
+      img.style.display='block';
+      document.getElementById('idle').style.display='none';
+      let fc=0;
+      esp32Timer=setInterval(async ()=>{
+        fc++;
+        if(fc%POSE_SKIP===0 && poseReady){ try{ await PoseModel.send({image:img}); }catch(_){} }
+      }, 66); // ~15fps sampling of the always-updating <img> element
+      camActive=true;btn.textContent='STOP CAM';btn.disabled=false;btn.classList.add('cam-on');
+      return;
+    }catch(e){
+      btn.textContent='ERROR';btn.disabled=false;btn.classList.add('cam-on');
+      document.querySelector('#idle p').textContent='ESP32-CAM unreachable — check the stream URL in Devices.';
+      return;
+    }
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},facingMode:'user'}});
+    const v=document.getElementById('webcam');v.srcObject=stream;v.style.display='block';
+    document.getElementById('idle').style.display='none';
+    await v.play();
+    let fc=0;
+    camUtil=new Camera(v,{onFrame:async()=>{fc++;if(fc%POSE_SKIP===0&&poseReady)await PoseModel.send({image:v});},width:640,height:480});
+    await camUtil.start();
+    camActive=true;btn.textContent='STOP CAM';btn.disabled=false;btn.classList.add('cam-on');
+  }catch(e){
+    btn.textContent='ERROR';btn.disabled=false;btn.classList.add('cam-on');
+    document.querySelector('#idle p').textContent='Camera denied — allow permissions and reload.';
+  }
+}
+
+function stopCam(){
+  const btn=document.getElementById('btn-cam'),v=document.getElementById('webcam'),ei=document.getElementById('esp32cam');
+  if(camUtil){try{camUtil.stop();}catch(_){}camUtil=null;}
+  if(esp32Timer){clearInterval(esp32Timer);esp32Timer=null;}
+  if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}
+  v.style.display='none';
+  if(ei){ei.style.display='none';ei.src='';}
+  document.getElementById('overlay').getContext('2d').clearRect(0,0,9999,9999);
+  document.getElementById('idle').style.display='flex';
+  document.getElementById('hudex').style.display='none';
+  document.getElementById('rephud').style.display='none';
+  document.getElementById('livepill').classList.remove('on');
+  document.getElementById('livetxt').textContent='OFFLINE';
+  document.getElementById('hudlive').textContent='';
+  document.getElementById('hudfps').textContent='';
+  document.getElementById('exname').textContent='—';
+  const ab=document.getElementById('alertbox');ab.className='alert idle';ab.textContent='Step into frame to begin';
+  document.getElementById('rform').style.strokeDashoffset=C2;document.getElementById('rformv').textContent='0';
+  document.getElementById('rreps').style.strokeDashoffset=C2;document.getElementById('rrepsv').textContent='0';
+  updateJoints(null);
+  releaseExerciseSelection();
+  camActive=false;btn.textContent='START CAM';btn.disabled=false;btn.classList.remove('cam-on');
+}
+
+function toggleIdeal(){showIdeal=!showIdeal;const b=document.getElementById('btn-ideal');b.classList.toggle('on',showIdeal);b.textContent=showIdeal?'IDEAL ON':'IDEAL';}
+function toggleSkel(){showSkel=!showSkel;const b=document.getElementById('btn-skel');b.classList.toggle('on',showSkel);b.textContent=showSkel?'SKELETON ON':'SKELETON';}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function openDash(){
+  document.getElementById('dashdate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  refreshDash();
+  document.getElementById('dash').classList.add('open');
+}
+
+function closeDash(){document.getElementById('dash').classList.remove('open');}
+
+function refreshDash(){
+  const done=TC.filter(c=>CP[c.id]?.done).length;
+  document.getElementById('dstreak').textContent=G.streak;
+  document.getElementById('dcreds').textContent=G.totalCredits.toLocaleString();
+  document.getElementById('ddone').textContent=done;
+  document.getElementById('ddonesub').textContent=`of ${TC.length} challenges`;
+  document.getElementById('dbonus').textContent='+'+G.credStr;
+  const tot=Math.max(G.credToday,1);
+  document.getElementById('ctot').textContent=G.credToday;
+  document.getElementById('cphysv').textContent=G.credPhys;document.getElementById('cmentv').textContent=G.credMent;document.getElementById('cstrv').textContent=G.credStr;
+  document.getElementById('cphys').style.width=Math.min(G.credPhys/tot*100,100)+'%';
+  document.getElementById('cment').style.width=Math.min(G.credMent/tot*100,100)+'%';
+  document.getElementById('cstr').style.width=Math.min(G.credStr/tot*100,100)+'%';
+  const avgS=SS.stresses.length?Math.round(SS.stresses.reduce((a,b)=>a+b)/SS.stresses.length):null;
+  const bestF=SS.forms.length?Math.max(...SS.forms):null;
+  const moodC={};SS.moods.forEach(m=>moodC[m]=(moodC[m]||0)+1);
+  const domM=Object.entries(moodC).sort((a,b)=>b[1]-a[1])[0]?.[0]||F.mood;
+  const vc=MCOL[domM]||'#888',sc3=!avgS?'#888':avgS>70?'#ff3d5a':avgS>40?'#ffcc00':'#00ff87';
+  document.getElementById('vstress').textContent=avgS!=null?avgS+'%':'—';document.getElementById('vstress').style.color=sc3;
+  document.getElementById('vmood').textContent=domM;document.getElementById('vmood').style.color=vc;
+  document.getElementById('vform').textContent=bestF!=null?bestF+'%':'—';
+  document.getElementById('vreps').textContent=SS.totalReps;
+  const tc={physical:'var(--blue)',mental:'var(--purple)',hybrid:'var(--teal)'};
+  document.getElementById('challist').innerHTML=TC.map(c=>{
+    const pg=CP[c.id]||{p:0,done:false};
+    const mx=c.tgt.reps||c.tgt.dur||1,pct=Math.min(pg.p/mx*100,100);
+    const cc=pg.done?'done':pct>0?'act':'';
+    const ck=pg.done?'done':pct>0?'act':'todo',ci=pg.done?'✓':pct>0?'●':'○';
+    return`<div class="ccard ${cc}">
+      <div class="cicon ${c.t}">${c.icon}</div>
+      <div class="cbody">
+        <div class="cname">${c.name}</div>
+        <div class="cdesc">${c.desc}</div>
+        <div class="cpbar"><div class="cpfill" style="width:${pct}%;background:${tc[c.t]||'var(--green)'}\"></div></div>
+        <div class="cftr"><div class="ccred">+${c.cr} ⭐</div><div class="ctype">${c.t}</div><div class="cpct">${pg.done?'done':Math.round(pct)+'%'}</div></div>
+      </div>
+      <div class="cchk ${ck}">${ci}</div>
+    </div>`;
+  }).join('');
+  const days=[];for(let i=13;i>=0;i--){const d=new Date(Date.now()-i*86400000).toISOString().slice(0,10);days.push(d);}
+  document.getElementById('sgrid').innerHTML=days.map(d=>{
+    const isT=d===today,act=G.actLog.includes(d)||(isT&&TC.some(c=>CP[c.id]?.done));
+    const cl=isT?'today':act?'done':'miss';
+    return`<div class="sday ${cl}">${new Date(d).getDate()}</div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+async function initializeAdaptiveChallenges() {
+  console.log('🤖 Initializing adaptive challenge system...');
+  try {
+    await adaptiveSystem.fetchAdaptiveChallenges(
+      80,
+      V.hr != null ? V.hr : 70,
+      V.spo2 != null ? V.spo2 : 95,
+      F.stress || 50
+    );
+    console.log('✅ Adaptive challenges loaded');
+  } catch (error) {
+    console.warn('Adaptive challenges unavailable, using static challenges');
+  }
+}
+
+window.addEventListener('load', async ()=> {
+  initModels();
+  drawCompanion();
+  companionSay('idle');
+  setTimeout(() => {
+    initializeAdaptiveChallenges();
+  }, 2000);
+});
+</script>
+</body>
+</html>

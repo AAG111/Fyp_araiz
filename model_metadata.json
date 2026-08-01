@@ -1,0 +1,12 @@
+{
+  "foundation_trained": true,
+  "user_data_days": 0,
+  "last_retrain": "2026-08-01T21:16:52.121473",
+  "last_weekly_retrain": "2026-08-01T21:16:52.121473",
+  "total_user_samples": 0,
+  "model_version": 1,
+  "use_user_data": false,
+  "user_data_confidence": 0.0,
+  "dataset": "kaggle_fitness_tracker",
+  "foundation_samples": 1800
+}
