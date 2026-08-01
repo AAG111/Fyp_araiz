@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: formcheck-backend
+    env: python
+    plan: free
+    buildCommand: pip install -r backend_requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:10000 server:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
